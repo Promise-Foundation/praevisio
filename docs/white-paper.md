@@ -1,247 +1,242 @@
-AI Governance Through Verifiable Promises
-A Framework for Pre-Deployment Compliance Verification
-David Joseph
-November 29, 2025
+# AI Governance Through Verifiable Promises
 
-Abstract
+## A Framework for Pre-Deployment Compliance Verification
+
+**Author:** David Joseph  
+**Date:** November 29, 2025
+
+## Abstract
 Current AI governance fails at the moment it matters most: before code enters production. Organizations spend millions discovering compliance violations after deployment, when remediation is 10-100x more expensive than prevention. This whitepaper introduces a novel framework that inverts the compliance paradigm—from reactive discovery to proactive verification—by combining three innovations: (1) promise-based compliance specification, where policies become testable commitments made before development begins, (2) evidence-driven credence scoring, which quantifies "how likely is this code to keep its promises?" using automated evidence collection and Bayesian reasoning, and (3) economic incentives for accuracy, where evaluators stake resources on their assessments, creating a self-correcting marketplace for truth.
 The framework integrates two complementary systems: ABDUCTIO, a decision-theoretic protocol for acting under uncertainty that separates credence (current probability) from confidence (expected belief movement), and Sponsio, an economic protocol for stake-backed promises with domain-specific merit. Together, they create conditions where promise-keeping emerges as the economically rational strategy, validated by agent-based modeling showing 76.7-79.9% compliance rates even under coordinated attacks.
 We demonstrate how this framework transforms AI governance from a documentation exercise into a verifiable, auditable, and economically sustainable practice. Organizations define compliance as explicit promises, developers receive real-time scoring on every commit, and violations are caught pre-deployment with 70-80% greater efficiency than post-hoc auditing. The result is not a "trustless" system—which is often impossible for complex judgments—but a trustworthy one, where trust is earned through demonstrable action within a formally verified economic structure.
 
-Table of Contents
+## Table of Contents
 
-Introduction: The AI Governance Crisis
-The Fundamental Problem with Current Approaches
-Promise-Based Compliance: A New Paradigm
-Evidence and Credence: Quantifying Belief
-The ABDUCTIO Framework: Decision-Theoretic Verification
-The Sponsio Protocol: Economic Accountability
-Integration: The Complete Architecture
-Developer Experience: How It Works in Practice
-Economic Model and Incentives
-Validation and Formal Guarantees
-Addressing Common Objections
-Implementation Roadmap
-Conclusion
-Appendices
+- [1. Introduction: The AI Governance Crisis](#1-introduction-the-ai-governance-crisis)
+- [2. The Fundamental Problem with Current Approaches](#2-the-fundamental-problem-with-current-approaches)
+- [3. Promise-Based Compliance: A New Paradigm](#3-promise-based-compliance-a-new-paradigm)
+- Evidence and Credence: Quantifying Belief
+- The ABDUCTIO Framework: Decision-Theoretic Verification
+- The Sponsio Protocol: Economic Accountability
+- Integration: The Complete Architecture
+- Developer Experience: How It Works in Practice
+- Economic Model and Incentives
+- Validation and Formal Guarantees
+- Addressing Common Objections
+- Implementation Roadmap
+- Conclusion
+- Appendices
 
-
-<a id="1-introduction"></a>
-1. Introduction: The AI Governance Crisis
+# 1. Introduction: The AI Governance Crisis
 On a Tuesday morning in March 2024, a major healthcare AI company discovered that their diagnostic model—deployed to 47 hospitals—had been making recommendations without logging patient data as required by their compliance framework. The violation had existed for six weeks. The cost: $2.3M in immediate remediation, another $4.1M in regulatory fines, and immeasurable reputational damage.
 This was entirely preventable. The requirement was documented. The engineering team knew about it. But knowing and doing are different things, and the gap between policy and practice is where compliance violations live.
-1.1 The Core Problem
+## 1.1. The Core Problem
 AI governance today happens at the wrong time.
 Organizations write compliance policies, developers build systems, and violations are discovered only after deployment—when they're expensive, dangerous, and sometimes irreversible. This delay creates a predictable pattern:
 
-Policy definition (weeks): Compliance team drafts a 50-page document
-Development (months): Engineers build features, possibly reading the policy
-Testing (weeks): QA checks functionality, not compliance
-Deployment (days): Code ships to production
-Discovery (weeks-months): Audit finds a violation
-Remediation (months): Expensive retrofit, potential recall, regulatory response
+- **Policy definition (weeks):** Compliance team drafts a 50-page document
+- **Development (months):** Engineers build features, possibly reading the policy
+- **Testing (weeks):** QA checks functionality, not compliance
+- **Deployment (days):** Code ships to production
+- **Discovery (weeks-months):** Audit finds a violation
+- **Remediation (months):** Expensive retrofit, potential recall, regulatory response
 
 The median time from violation to discovery is 6-12 weeks. By then, the problematic code has propagated through the system, other features have been built on top of it, and fixing it requires untangling dependencies across multiple teams.
 The economic consequence is brutal. Research consistently shows that fixing defects in production costs 10-100x more than catching them during development1. For compliance violations in AI systems, where regulatory fines and reputational damage compound the technical cost, the multiplier can be even higher.
-1.2 Why Current Tools Fail
+## 1.2. Why Current Tools Fail
 Existing approaches fall into three categories, each with fundamental limitations:
-Post-deployment monitoring tools (Credo AI, HolisticAI, Fiddler, Arthur) watch for problems after code ships. They're essential for catching drift and emergent issues, but they're reactive by design. By the time they detect a violation, the damage is done.
-Pre-deployment checklists (governance frameworks, internal review processes) rely on humans remembering to check compliance before each release. They fail because:
-
-Humans forget under deadline pressure
-Checklists are subjective ("did we adequately test for bias?")
-No automated enforcement
-Easy to click "yes" without actually verifying
-
-Code analysis tools (SonarQube, Snyk, Semgrep) catch specific patterns (security vulnerabilities, code smells) but don't understand compliance semantics. They can detect "API call without logging" but not "does this satisfy our fairness requirements?"
+- **Post-deployment monitoring tools** (Credo AI, HolisticAI, Fiddler, Arthur) watch for problems after code ships. They're essential for catching drift and emergent issues, but they're reactive by design. By the time they detect a violation, the damage is done.
+- **Pre-deployment checklists** (governance frameworks, internal review processes) rely on humans remembering to check compliance before each release. They fail because:
+  - Humans forget under deadline pressure
+  - Checklists are subjective ("did we adequately test for bias?")
+  - No automated enforcement
+  - Easy to click "yes" without actually verifying
+- **Code analysis tools** (SonarQube, Snyk, Semgrep) catch specific patterns (security vulnerabilities, code smells) but don't understand compliance semantics. They can detect "API call without logging" but not "does this satisfy our fairness requirements?"
 The gap: No existing tool provides automated, pre-deployment verification that code will keep semantic compliance promises with quantified confidence and economic consequences for accuracy.
-1.3 What This Whitepaper Proposes
+## 1.3. What This Whitepaper Proposes
 We introduce a framework that moves compliance verification to the moment it can have maximum impact: before code enters the repository.
 The framework is built on three core innovations:
-1. Promise-Based Compliance Specification
-Instead of prose policies, organizations define compliance as explicit, testable promises:
+- **Promise-Based Compliance Specification.** Instead of prose policies, organizations define compliance as explicit, testable promises:
+  - "All LLM API calls log input prompts to the audit database"
+  - "Models pass demographic parity tests (Δ < 0.05) before deployment"
+  - "PII is masked before any model processing"
 
-"All LLM API calls log input prompts to the audit database"
-"Models pass demographic parity tests (Δ < 0.05) before deployment"
-"PII is masked before any model processing"
+  These promises are formal contracts that can be automatically verified.
+- **Evidence-Driven Credence Scoring.** For each promise, the system computes:
+  - **Credence (B):** P(promise will be kept | code) ∈ [0, 1]
+  - **Confidence (C):** Expected movement in belief after one unit of evidence
 
-These promises are formal contracts that can be automatically verified.
-2. Evidence-Driven Credence Scoring
-For each promise, the system computes:
-
-Credence (B): P(promise will be kept | code) ∈ [0, 1]
-Confidence (C): Expected movement in belief after one unit of evidence
-
-Evidence is automatically collected from multiple sources (static analysis, test coverage, git history, CI/CD logs) and combined using rigorous Bayesian updating.
-3. Economic Incentives for Accuracy
-Evaluators (humans, AIs, or automated systems) can stake resources on their assessments. Accurate evaluators build reputation and earn rewards; inaccurate ones lose stakes and are marginalized. This creates a self-correcting marketplace where truth-telling is the economically rational strategy.
-1.4 Integration of ABDUCTIO and Sponsio
+  Evidence is automatically collected from multiple sources (static analysis, test coverage, git history, CI/CD logs) and combined using rigorous Bayesian updating.
+- **Economic Incentives for Accuracy.** Evaluators (humans, AIs, or automated systems) can stake resources on their assessments. Accurate evaluators build reputation and earn rewards; inaccurate ones lose stakes and are marginalized. This creates a self-correcting marketplace where truth-telling is the economically rational strategy.
+## 1.4. Integration of ABDUCTIO and Sponsio
 The framework integrates two complementary systems:
 ABDUCTIO is a decision-theoretic protocol for acting under uncertainty. It provides:
 
-Separation of credence (where we are) from confidence (how stable our belief is)
-Domain-scoped Standard Evidence Units (SEUs) for calibrated movement
-EVSI (Expected Value of Sample Information) gates: "Is additional verification worth the cost?"
-Formal propagation rules for composed claims with dependence
+- Separation of credence (where we are) from confidence (how stable our belief is)
+- Domain-scoped Standard Evidence Units (SEUs) for calibrated movement
+- EVSI (Expected Value of Sample Information) gates: "Is additional verification worth the cost?"
+- Formal propagation rules for composed claims with dependence
 
 Sponsio is an economic protocol for stake-backed promises. It provides:
 
-Domain-specific merit (reputation that can't be laundered across contexts)
-Coalition-resistant equilibrium (manipulation becomes economically irrational)
-Promise lifecycle management (intention → promise → assessment → merit update)
-Decentralized oracle network for real-world evidence validation
+- Domain-specific merit (reputation that can't be laundered across contexts)
+- Coalition-resistant equilibrium (manipulation becomes economically irrational)
+- Promise lifecycle management (intention → promise → assessment → merit update)
+- Decentralized oracle network for real-world evidence validation
 
 Together, they create a system where:
 
-Promises define what to verify (Sponsio)
-Evidence determines how confident we are (ABDUCTIO)
-Economics ensure evaluators are honest (Sponsio)
-EVSI decides when to stop verifying (ABDUCTIO)
+- Promises define what to verify (Sponsio)
+- Evidence determines how confident we are (ABDUCTIO)
+- Economics ensure evaluators are honest (Sponsio)
+- EVSI decides when to stop verifying (ABDUCTIO)
 
-1.5 Roadmap for This Document
-The remainder of this whitepaper proceeds as follows:
-Section 2 examines why current governance approaches fail, establishing the baseline we're improving upon.
-Section 3 introduces promise-based compliance, explaining how policies become verifiable commitments.
-Section 4 defines evidence and credence, showing how we quantify "how likely is this promise kept?"
-Section 5 details the ABDUCTIO framework: credence, confidence, SEUs, EVSI gates, and decomposition.
-Section 6 explains the Sponsio protocol: stakes, merit, economic equilibrium, and coalition resistance.
-Section 7 shows how they integrate into a complete architecture.
-Section 8 walks through the developer experience with concrete examples.
-Section 9 analyzes the economic model and incentive structure.
-Section 10 presents validation results: ABM simulations, calibration data, and formal guarantees.
-Section 11 addresses objections and compares against alternatives.
-Section 12 provides an implementation roadmap.
+## 1.5. Roadmap for This Document
+- The remainder of this whitepaper proceeds as follows:
+  - Section 2 examines why current governance approaches fail, establishing the baseline we're improving upon.
+  - Section 3 introduces promise-based compliance, explaining how policies become verifiable commitments.
+  - Section 4 defines evidence and credence, showing how we quantify "how likely is this promise kept?"
+  - Section 5 details the ABDUCTIO framework: credence, confidence, SEUs, EVSI gates, and decomposition.
+  - Section 6 explains the Sponsio protocol: stakes, merit, economic equilibrium, and coalition resistance.
+  - Section 7 shows how they integrate into a complete architecture.
+  - Section 8 walks through the developer experience with concrete examples.
+  - Section 9 analyzes the economic model and incentive structure.
+  - Section 10 presents validation results: ABM simulations, calibration data, and formal guarantees.
+  - Section 11 addresses objections and compares against alternatives.
+  - Section 12 provides an implementation roadmap.
 Throughout, we maintain two commitments:
 
-Honesty about limitations: We compare this framework against real alternatives, not idealized systems that don't exist.
-Practical focus: Every theoretical construct must answer: "How does this help someone ship compliant AI systems?"
+- **Honesty about limitations:** We compare this framework against real alternatives, not idealized systems that don't exist.
+- **Practical focus:** Every theoretical construct must answer: "How does this help someone ship compliant AI systems?"
 
 
-<a id="2-the-problem"></a>
-2. The Fundamental Problem with Current Approaches
+# 2. The Fundamental Problem with Current Approaches
 To understand why promise-based governance is necessary, we must first examine why existing approaches fail. The problem is not that organizations lack compliance frameworks—most have extensive policies. The problem is that policies don't enforce themselves, and the gap between "what we say we'll do" and "what the code actually does" is where violations emerge.
-2.1 The Policy-to-Practice Gap
+## 2.1. The Policy-to-Practice Gap
 A typical AI governance policy document contains statements like:
 
-"Models must be evaluated for fairness across protected demographic groups before deployment, with disparate impact ratios not exceeding 1.2:1 for any protected class."
+> "Models must be evaluated for fairness across protected demographic groups before deployment, with disparate impact ratios not exceeding 1.2:1 for any protected class."
 
 This is a reasonable requirement. But translating it into practice requires:
 
-Identifying where in the codebase this applies
-Implementing the fairness tests correctly
-Running the tests before each deployment
-Interpreting the results correctly
-Blocking deployment if tests fail
-Documenting that all of this happened
+- Identifying where in the codebase this applies
+- Implementing the fairness tests correctly
+- Running the tests before each deployment
+- Interpreting the results correctly
+- Blocking deployment if tests fail
+- Documenting that all of this happened
 
 Each step is a potential failure point. And failures compound: if step 1 is missed, all subsequent steps are irrelevant.
 Current approaches attempt to bridge this gap through:
 
-Human review processes: Subject to deadline pressure, attention limits, and inconsistent interpretation
-Checklists: Easy to check "yes" without actually verifying
-Automated scanners: Can detect syntactic patterns but not semantic compliance
-Post-deployment monitoring: Catches violations too late
+- Human review processes: Subject to deadline pressure, attention limits, and inconsistent interpretation
+- Checklists: Easy to check "yes" without actually verifying
+- Automated scanners: Can detect syntactic patterns but not semantic compliance
+- Post-deployment monitoring: Catches violations too late
 
 None of these approaches provides automated, pre-deployment verification with quantified confidence.
-2.2 Why Post-Deployment Monitoring Isn't Enough
+## 2.2. Why Post-Deployment Monitoring Isn't Enough
 Tools like Credo AI, HolisticAI, and Fiddler are valuable for catching model drift and emergent issues. But they're fundamentally reactive:
-Temporal problem: By the time monitoring detects an issue, the code has been in production for days or weeks. During that window:
-
-Decisions have been made based on flawed outputs
-User data has been processed incorrectly
-Regulatory violations have occurred
-Other code may have been built on top of the problematic component
-
-Economic problem: The cost structure is inverted. Organizations pay for monitoring infrastructure to detect problems that could have been prevented for a fraction of the cost during development.
-Psychological problem: The "deploy first, monitor later" mindset creates a culture where compliance is an afterthought rather than a precondition.
-Analogy: Post-deployment monitoring is like having fire alarms but no fire prevention. Essential for safety, but not sufficient.
-2.3 Why Checklists Don't Scale
+- **Temporal problem:** By the time monitoring detects an issue, the code has been in production for days or weeks. During that window:
+  - Decisions have been made based on flawed outputs
+  - User data has been processed incorrectly
+  - Regulatory violations have occurred
+  - Other code may have been built on top of the problematic component
+- **Economic problem:** The cost structure is inverted. Organizations pay for monitoring infrastructure to detect problems that could have been prevented for a fraction of the cost during development.
+- **Psychological problem:** The "deploy first, monitor later" mindset creates a culture where compliance is an afterthought rather than a precondition.
+- **Analogy:** Post-deployment monitoring is like having fire alarms but no fire prevention. Essential for safety, but not sufficient.
+## 2.3. Why Checklists Don't Scale
 Many organizations use review checklists before deployment:
-[ ] Fairness tests run for all protected attributes
-[ ] Model card documentation complete
-[ ] Data privacy impact assessment filed
-[ ] Security scan passed
-[ ] Bias mitigation applied where needed
+- [ ] Fairness tests run for all protected attributes
+- [ ] Model card documentation complete
+- [ ] Data privacy impact assessment filed
+- [ ] Security scan passed
+- [ ] Bias mitigation applied where needed
 These fail for predictable reasons:
-No verification: Checking a box doesn't prove the thing was done correctly, only that someone claims it was done.
-Deadline pressure: When shipping is urgent, boxes get checked without thorough review.
-Interpretation variance: "Bias mitigation applied where needed"—who decides what's "needed"? Different reviewers will have different standards.
-Cognitive load: For complex systems, meaningful review requires hours of careful analysis. Checklists create the illusion of verification without the substance.
-No evidence trail: If a violation is discovered later, there's no record of how the checklist was satisfied, making it impossible to diagnose where the process failed.
-2.4 Why Static Analysis Isn't Sufficient
+- **No verification:** Checking a box doesn't prove the thing was done correctly, only that someone claims it was done.
+- **Deadline pressure:** When shipping is urgent, boxes get checked without thorough review.
+- **Interpretation variance:** "Bias mitigation applied where needed"—who decides what's "needed"? Different reviewers will have different standards.
+- **Cognitive load:** For complex systems, meaningful review requires hours of careful analysis. Checklists create the illusion of verification without the substance.
+- **No evidence trail:** If a violation is discovered later, there's no record of how the checklist was satisfied, making it impossible to diagnose where the process failed.
+## 2.4. Why Static Analysis Isn't Sufficient
 Code analysis tools (SonarQube, Snyk, Semgrep) excel at pattern matching:
-python# This can be detected:
+```python
+# This can be detected:
 result = llm.call(prompt)  # Missing logging
+```
 
 # This should be:
 result = llm.call(prompt)
 audit_log.write(prompt)
 But they fail on semantic requirements:
-python# Does this satisfy "fairness requirements"?
+```python
+# Does this satisfy "fairness requirements"?
 if sensitive_attribute in features:
     features = apply_mitigation(features)
+```
 
 # How do we know apply_mitigation() is correct?
 # Did we test on the right demographic splits?
 # Is the threshold appropriate?
 Static analysis can detect syntactic compliance ("logging call exists") but not semantic compliance ("the system behaves fairly"). The latter requires reasoning about behavior, not just code structure.
-2.5 The Hidden Cost of Late Discovery
+## 2.5. The Hidden Cost of Late Discovery
 The real economic damage from current approaches isn't just the cost of fixing violations—it's the opportunity cost of misallocated verification effort.
 The paradox: Organizations spend similar effort verifying high-confidence and low-confidence claims.
 Consider two scenarios:
-Scenario A: Thermodynamically Impossible Claim
 
-A team proposes a model that would require violating conservation of energy
-Any physicist could reject this in 5 minutes with basic calculations
-Yet the standard compliance process still requires: full review, fairness testing, security scan, documentation
-Total cost: $50K in engineering time and 3 weeks delay
-Value: Zero (claim was never viable)
+**Scenario A: Thermodynamically Impossible Claim**
 
-Scenario B: Plausible Novel Architecture
+- A team proposes a model that would require violating conservation of energy
+- Any physicist could reject this in 5 minutes with basic calculations
+- Yet the standard compliance process still requires: full review, fairness testing, security scan, documentation
+- Total cost: $50K in engineering time and 3 weeks delay
+- Value: Zero (claim was never viable)
 
-A team proposes a legitimately innovative approach
-Requires careful evaluation: novel failure modes, uncertainty about behavior
-Gets the same review process as Scenario A
-Total cost: $50K in engineering time and 3 weeks delay
-Value: High (but process didn't reflect the uncertainty)
+**Scenario B: Plausible Novel Architecture**
+
+- A team proposes a legitimately innovative approach
+- Requires careful evaluation: novel failure modes, uncertainty about behavior
+- Gets the same review process as Scenario A
+- Total cost: $50K in engineering time and 3 weeks delay
+- Value: High (but process didn't reflect the uncertainty)
 
 The waste: Current processes don't adapt verification effort to uncertainty. The thermodynamically impossible claim consumed the same resources as the genuinely uncertain one.
 A rational process would:
 
-Spend 5 minutes and $500 on Scenario A (quick rejection)
-Spend weeks and $50K+ on Scenario B (thorough evaluation)
+- Spend 5 minutes and $500 on Scenario A (quick rejection)
+- Spend weeks and $50K+ on Scenario B (thorough evaluation)
 
 This is what the EVSI (Expected Value of Sample Information) gate provides: It asks "Is additional verification worth the cost?" and adapts effort accordingly.
-2.6 The Accountability Problem
+## 2.6. The Accountability Problem
 When violations are discovered post-deployment, accountability is diffuse:
 
-Engineering: "We followed the documented process"
-Compliance: "We wrote clear policies"
-QA: "We ran the prescribed tests"
-Management: "We allocated reasonable resources"
+- Engineering: "We followed the documented process"
+- Compliance: "We wrote clear policies"
+- QA: "We ran the prescribed tests"
+- Management: "We allocated reasonable resources"
 
 Everyone followed their role, yet the violation occurred. The system has no memory of why decisions were made.
 Did the fairness test pass because the model is actually fair, or because:
 
-The test wasn't run on the right data splits?
-The threshold was set too permissively?
-The test implementation had a bug?
-Someone checked "yes" under deadline pressure without actually verifying?
+- The test wasn't run on the right data splits?
+- The threshold was set too permissively?
+- The test implementation had a bug?
+- Someone checked "yes" under deadline pressure without actually verifying?
 
 Without cryptographically signed audit trails that capture the evidence used to make each decision, post-hoc accountability is impossible.
-2.7 What a Better System Requires
+## 2.7. What a Better System Requires
 From this analysis, a better governance system must provide:
 
-Pre-deployment verification: Catch violations before code enters production
-Semantic understanding: Verify behavior, not just syntactic patterns
-Quantified confidence: Distinguish "we're 95% sure" from "we're 60% sure"
-Adaptive effort: Spend more on uncertain claims, less on obvious ones
-Economic incentives: Make accurate assessment profitable and inaccurate assessment costly
-Audit trails: Cryptographically signed records of evidence and decisions
-Continuous improvement: System learns from outcomes and improves predictions
+- Pre-deployment verification: Catch violations before code enters production
+- Semantic understanding: Verify behavior, not just syntactic patterns
+- Quantified confidence: Distinguish "we're 95% sure" from "we're 60% sure"
+- Adaptive effort: Spend more on uncertain claims, less on obvious ones
+- Economic incentives: Make accurate assessment profitable and inaccurate assessment costly
+- Audit trails: Cryptographically signed records of evidence and decisions
+- Continuous improvement: System learns from outcomes and improves predictions
 
 No existing tool provides all seven. The framework presented in this whitepaper does.
-2.8 A Concrete Comparison
+## 2.8. A Concrete Comparison
 To make the contrast concrete, consider the compliance requirement: "All LLM API calls must log input prompts."
 Current approach:
 
@@ -268,10 +263,9 @@ Savings: $795K (79.5% reduction)
 And this is for a single violation. Organizations with 50 engineers making 250 commits/day experience dozens of compliance issues monthly. The cumulative savings are substantial.
 The key insight: Investing in verification pre-deployment is not an additional cost—it's a cost reduction compared to post-deployment remediation.
 
-<a id="3-promises"></a>
-3. Promise-Based Compliance: A New Paradigm
+# 3. Promise-Based Compliance: A New Paradigm
 The fundamental insight of this framework is that compliance policies are promises—commitments about future behavior that can be explicitly stated, automatically verified, and held accountable.
-3.1 What Is a Promise?
+## 3.1. What Is a Promise?
 In Promise Theory (developed by Mark Burgess), a promise is an autonomous agent's voluntary commitment about its own behavior2. Key properties:
 
 Voluntary: Agents can only promise their own actions, not impose on others
@@ -283,7 +277,7 @@ This maps naturally to AI governance:
 Traditional policy: "All LLM calls should log inputs" (vague expectation)
 Promise: "I promise that all LLM API calls will write input prompts to audit_log before receiving responses" (explicit, testable commitment)
 The shift from implicit expectations to explicit promises has profound implications.
-3.2 Promises vs. Policies: The Critical Difference
+## 3.2. Promises vs. Policies: The Critical Difference
 Policies are written by authorities and imposed on subordinates. They're:
 
 Often vague ("be ethical," "ensure fairness")
@@ -301,13 +295,14 @@ Have clear success criteria (the promise body)
 Example comparison:
 AspectPolicyPromiseStatement"Models should be evaluated for bias""I promise this model passes demographic parity tests (Δ < 0.05) on census-representative test data"VerifierCompliance team reviews documentationAutomated evidence collection + assessmentTimelineChecked during quarterly auditVerified pre-deploymentConsequencePossible disciplinary actionStake slashed if promise brokenImprovementPolicy updated after incidentMerit/confidence updated after each assessment
 The promise formulation forces precision. You cannot promise to "be ethical"—you must promise specific, testable behaviors.
-3.3 The Anatomy of a Promise
+## 3.3. The Anatomy of a Promise
 A compliance promise has six components:
 1. Promiser: The agent making the promise (engineering team, individual developer, or organization)
 2. Promisee: Who the promise is made to (often "*" for public promises, or specific stakeholders)
 3. Domain: The area of expertise/capability this promise belongs to (e.g., /ai-governance/observability/_llm-logging)
 4. Body: The specific behavior being promised
-yamlstatement: "All LLM API calls log input prompts to audit database"
+```yaml
+statement: "All LLM API calls log input prompts to audit database"
 parameters:
   database: audit_log
   fields: [timestamp, user_id, prompt, model_id]
@@ -338,6 +333,7 @@ yamlpromise:
     credence_threshold: 0.95
     evidence_types: [direct_observational, pattern, procedural, theoretical]
   critical: true  # Blocks commit if violated
+```
 ```
 
 This structure makes promises:
@@ -427,7 +423,7 @@ If they predicted high credence and promise was broken → merit decreases
 If they predicted low credence and were correct → merit increases
 
 This feedback loop improves future assessments.
-3.6 Why Promises Force Better Policy Design
+## 3.6. Why Promises Force Better Policy Design
 The act of formalizing compliance as promises has a surprising benefit: it forces clarity.
 Before (vague policy):
 
@@ -441,7 +437,8 @@ Tested on what data? (What counts as "protected groups"?)
 At what stage? (During training? Before deployment? Continuously?)
 
 After (promise):
-yamlpromise:
+```yaml
+promise:
   statement: "Model satisfies demographic parity across protected attributes"
   parameters:
     attributes: [race, gender, age]
@@ -460,6 +457,7 @@ A promise: "I will log all LLM calls"
 An imposition: "You must log all LLM calls"
 The distinction matters because promises can be kept, impositions can only be accepted or ignored.
 In the governance framework:
+```
 
 The compliance team makes promises about policies: "We promise clear, testable compliance requirements"
 Developers make promises about code: "We promise this code keeps the specified compliance promises"
@@ -467,7 +465,7 @@ Evaluators make promises about assessments: "We promise accurate evaluation of w
 
 No one can impose promises on others. But impositions (requests) can trigger promises. When compliance requests "ensure LLM logging," engineering can respond with a promise: "We promise to implement it with 95% credence by Friday."
 This voluntary structure is crucial for autonomous agents (including AIs). You can't force an AI to do something, but you can offer incentives that make promising the rational choice.
-3.8 Decomposition: Complex Promises from Simple Ones
+## 3.8. Decomposition: Complex Promises from Simple Ones
 Many compliance requirements are compound:
 Complex promise: "Ensure safe, fair, and auditable LLM deployment"
 This is actually multiple promises:
@@ -477,21 +475,24 @@ Fairness: "LLM responses don't vary by protected attributes"
 Auditability: "All LLM calls are logged"
 
 The framework supports promise decomposition:
-yamlparent_promise:
+```yaml
+parent_promise:
   id: safe-fair-auditable-llm
   type: AND  # All children must be kept
   children:
     - llm-output-filtering
     - llm-fairness-testing
     - llm-input-logging
+```
 
 # Each child is its own promise with domain, stake, evidence
 Credence propagates through composition using formal rules (Section 5.4). If any child promise has low credence, the parent credence is low—triggering verification before the composite promise is considered satisfied.
 This solves a key problem: Complex requirements don't become hand-wavy. They're explicitly broken into testable components, each verified independently.
-3.9 Living Promises: Evolution Over Time
+## 3.9. Living Promises: Evolution Over Time
 Compliance requirements change. Regulations update, new risks emerge, best practices evolve.
 Promises support versioning:
-yamlpromise:
+```yaml
+promise:
   id: llm-input-logging
   version: 2.0.0  # Semantic versioning
   supercedes: llm-input-logging-v1.2.3
@@ -500,13 +501,14 @@ yamlpromise:
     - Increased credence threshold from 0.90 to 0.95
   effective_date: 2025-12-01T00:00:00Z
 When a promise is updated:
+```
 
 Old code isn't retroactively judged (immutability of commitments)
 New code must satisfy the new promise version
 The transition is explicit and auditable
 
 This provides regulatory compliance evolution without breaking existing systems.
-3.10 Example: End-to-End Promise Definition
+## 3.10. Example: End-to-End Promise Definition
 Let's walk through defining a promise for a real compliance requirement.
 Regulatory requirement (EU AI Act Article 13):
 
@@ -515,7 +517,8 @@ Regulatory requirement (EU AI Act Article 13):
 Step 1: Make it specific
 What does "sufficiently transparent" mean? After deliberation, the compliance team decides: "For each high-risk decision, system provides a natural language explanation of top 3 factors."
 Step 2: Formalize as promise
-yamlpromise:
+```yaml
+promise:
   id: explainability-high-risk-v1
   domain: /ai-governance/transparency/_explainability
   statement: "High-risk AI outputs include natural language explanations"
@@ -548,6 +551,7 @@ yamlevidence_collection:
     pre_deployment: [integration_tests, human_evaluation, user_testing]
 Step 4: Set thresholds
 Based on risk analysis:
+```
 
 Credence threshold: 0.90 (high confidence required for high-risk systems)
 Confidence threshold: 0.70 (must have stable belief, not just high credence)
@@ -575,10 +579,9 @@ Diffuse accountability (unclear who's responsible) becomes explicit stakes (prom
 
 The promise is the foundation. Everything else builds on it.
 
-<a id="4-evidence"></a>
-4. Evidence and Credence: Quantifying Belief
+# 4. Evidence and Credence: Quantifying Belief
 Promises without verification are merely aspirations. The framework's second pillar is evidence: structured observations that update our belief about whether a promise will be kept.
-4.1 What Is Evidence?
+## 4.1. What Is Evidence?
 Evidence is any observation that, when combined with prior belief, changes our probability estimate for a claim.
 In Bayesian terms:
 
@@ -593,9 +596,9 @@ Content: The actual data (test results, logs, code analysis)
 Provenance: Where it came from (cryptographic hash, source signature)
 Merit score: Quality assessment based on source reliability and method
 
-4.2 The Eight Evidence Types
+## 4.2. The Eight Evidence Types
 Different promises require different kinds of proof. The framework recognizes eight evidence types, each with distinct epistemological properties.
-4.2.1 Direct Observational Evidence
+### 4.2.1. Direct Observational Evidence
 Definition: Raw measurements or recordings with minimal transformation.
 Examples:
 
@@ -612,7 +615,8 @@ Low interpretation ambiguity
 Can be automatically collected
 
 Auto-collection playbook:
-yamlevidence_type: direct_observational
+```yaml
+evidence_type: direct_observational
 promise: llm-input-logging
 collection:
   - run: static_analyzer
@@ -629,12 +633,13 @@ provenance:
   execution_env: ci-container-sha256:abc123...
   timestamp: 2025-11-29T14:32:01Z
 Merit scoring:
+```
 
 ✅ High: Tool is well-calibrated, execution environment is reproducible
 ⚠️ Medium: Tool has known false positive rate
 ❌ Low: Tool output is ambiguous or source is uncalibrated
 
-4.2.2 Absence Evidence
+### 4.2.2. Absence Evidence
 Definition: Constrained non-observation where an effect should be detectable given search power.
 Examples:
 
@@ -650,7 +655,8 @@ Can be more informative than presence (things that should exist but don't)
 Requires explicit power analysis: "We looked here and didn't find it"
 
 Auto-collection playbook:
-yamlevidence_type: absence
+```yaml
+evidence_type: absence
 promise: bias-mitigation-required
 collection:
   - search: codebase
@@ -666,13 +672,14 @@ power_analysis:
   search_coverage: 0.95  # Confident we'd find it if it existed
   false_negative_rate: 0.05
 Merit scoring:
+```
 
 ✅ High: Comprehensive search with high coverage, low false negative rate
 ⚠️ Medium: Search may have missed some areas
 ❌ Low: Search was superficial or incomplete
 
 Why absence matters: For safety-critical promises, absence of expected protections is often more informative than presence of positive tests.
-4.2.3 Pattern Evidence
+### 4.2.3. Pattern Evidence
 Definition: Statistical structures emerging from multiple observations.
 Examples:
 
@@ -688,7 +695,8 @@ Can reveal systematic behaviors invisible in single observations
 Susceptible to p-hacking if not preregistered
 
 Auto-collection playbook:
-yamlevidence_type: pattern
+```yaml
+evidence_type: pattern
 promise: llm-input-logging
 collection:
   - analyze: git_history
@@ -707,12 +715,13 @@ collection:
     mean: 0.94
     std: 0.03
 Merit scoring:
+```
 
 ✅ High: Large sample, preregistered analysis, low heterogeneity
 ⚠️ Medium: Moderate sample, post-hoc analysis with justification
 ❌ Low: Small sample, cherry-picked examples, high variance
 
-4.2.4 Response Evidence
+### 4.2.4. Response Evidence
 Definition: Measurable changes in behavior by informed actors post-exposure.
 Examples:
 
@@ -728,7 +737,8 @@ Temporal proximity matters (quick response suggests causation)
 Can indicate awareness of risk even if direct evidence is ambiguous
 
 Auto-collection playbook:
-yamlevidence_type: response
+```yaml
+evidence_type: response
 promise: security-vulnerability-patching
 collection:
   - monitor: deployment_pipeline
@@ -744,12 +754,13 @@ collection:
       delay_hours: 4.5
       expected_delay_if_random: >72  # Response was unusually fast
 Merit scoring:
+```
 
 ✅ High: Rapid response, low-base-rate action, clear causal link
 ⚠️ Medium: Response occurred but could be coincidental
 ❌ Low: Response is routine or delayed, weak causal evidence
 
-4.2.5 Theoretical Evidence
+### 4.2.5. Theoretical Evidence
 Definition: Formal models, simulations, or logical deductions constraining plausibility.
 Examples:
 
@@ -765,7 +776,8 @@ Brittle to assumption violations
 Can rule out impossibilities definitively
 
 Auto-collection playbook:
-yamlevidence_type: theoretical
+```yaml
+evidence_type: theoretical
 promise: pii-data-flow-isolation
 collection:
   - run: information_flow_analysis
@@ -788,13 +800,14 @@ provenance:
   verification_tool: formal-analyzer-v2.1
   proof_certificate: sha256:def456...
 Merit scoring:
+```
 
 ✅ High: Formal proof with explicit assumptions, reproducible
 ⚠️ Medium: Simulation or informal argument, assumptions reasonable
 ❌ Low: Hand-wavy reasoning, critical assumptions not validated
 
 Warning: Theoretical evidence is only as strong as its assumptions. The system must track assumption validity.
-4.2.6 Procedural Evidence
+### 4.2.6. Procedural Evidence
 Definition: Evidence about how work was done—process quality, not outcome quality.
 Examples:
 
@@ -811,7 +824,8 @@ Can dramatically increase or decrease confidence without changing credence much
 Critical for reproducibility and trust
 
 Auto-collection playbook:
-yamlevidence_type: procedural
+```yaml
+evidence_type: procedural
 promise: bias-testing-rigorous
 collection:
   - verify: preregistration
@@ -831,13 +845,14 @@ collection:
       when: [2025-11-20, 2025-11-21]
       what: [read_only, no_modifications]
 Merit scoring:
+```
 
 ✅ High: Complete audit trail, preregistration, blinding, calibration verified
 ⚠️ Medium: Some procedural safeguards in place, minor gaps
 ❌ Low: Post-hoc analysis, no blinding, unclear data provenance
 
 Why procedural evidence matters: It's the difference between "test passed" (which could be p-hacked) and "test passed under preregistered protocol with blinding" (much stronger).
-4.2.7 Analogical Evidence
+### 4.2.7. Analogical Evidence
 Definition: Structured comparison to established phenomena with shared mechanisms.
 Examples:
 
@@ -853,7 +868,8 @@ Useful for novel situations where direct evidence is sparse
 Requires explicit mapping of similarities and differences
 
 Auto-collection playbook:
-yamlevidence_type: analogical
+```yaml
+evidence_type: analogical
 promise: model-deployment-safe
 collection:
   - identify: analogous_cases
@@ -876,12 +892,13 @@ collection:
       model_C: [none, rule_based, none]
     closest_match: model_A  # Shares safety architecture
 Merit scoring:
+```
 
 ✅ High: Close mechanism match, explicit similarity mapping, large reference set
 ⚠️ Medium: Moderate similarity, some differences acknowledged
 ❌ Low: Superficial similarity, ignoring key differences
 
-4.2.8 Counterfactual Evidence
+### 4.2.8. Counterfactual Evidence
 Definition: Tests where observed reality contradicts a rival hypothesis's predictions.
 Examples:
 
@@ -897,7 +914,8 @@ Can rule out alternatives more definitively than confirming positives
 Requires prespecifying what would falsify the rival
 
 Auto-collection playbook:
-yamlevidence_type: counterfactual
+```yaml
+evidence_type: counterfactual
 promise: llm-calls-are-logged
 rival_hypothesis: "Some LLM calls bypass logging"
 collection:
@@ -915,6 +933,7 @@ collection:
   - conclusion:
       rival_prediction: VIOLATED
       evidence_against_rival: STRONG
+```
 ```
 
 **Merit scoring:**
@@ -983,7 +1002,7 @@ Threshold decision:
 If threshold = 0.95: BLOCK (need more evidence)
 If threshold = 0.80: PASS (sufficient confidence)
 
-4.4 Confidence (C): Expected Belief Movement
+## 4.4. Confidence (C): Expected Belief Movement
 Credence tells us where we are. Confidence tells us how stable that belief is.
 Confidence (denoted CC
 C) is the expected absolute movement in credence after one Standard Evidence Unit (SEU).
@@ -1033,7 +1052,9 @@ Practical computation:
 For Beta(a, b) model, confidence depends on effective sample size n=a+bn = a + b
 n=a+b:
 
-pythonimport math
+```python
+import math
+```
 
 def expected_movement(a, b):
     """Expected absolute log-odds movement after one observation"""
@@ -1053,9 +1074,11 @@ def confidence(a, b, S_ref):
 Beta(10, 2): B = 0.83, C = 0.78 (fairly stable)
 Beta(2, 0.4): B = 0.83, C = 0.42 (same credence, much less stable)
 The system can require both credence and confidence thresholds:
-yamlsuccess_criteria:
+```yaml
+success_criteria:
   credence_threshold: 0.90
   confidence_threshold: 0.70
+```
 ```
 
 This ensures decisions are made on stable, well-evidenced beliefs.
@@ -1091,7 +1114,8 @@ EVSI gate: Continue gathering or stop?
     ↓
 Decision: Proceed / Block / Request Fix
 Collection job specification:
-yamljob:
+```yaml
+job:
   node_id: promise-llm-logging-commit-abc123
   goal: "Raise credence to ≥ 0.95 or exhaust budget"
   budget:
@@ -1149,6 +1173,7 @@ Cryptographic signatures: Evidence sources can sign their output, providing non-
 4.6 Evidence Merit Scoring
 Not all evidence is equally reliable. Merit scoring weights evidence based on source quality.
 Factors:
+```
 
 Source reliability: Has this tool been calibrated? Historical false positive rate?
 Method quality: Was a proper procedure followed? Preregistered analysis?
@@ -1157,10 +1182,12 @@ Recency: Is the evidence current or stale?
 Independence: Is this evidence correlated with other evidence (avoid double-counting)?
 
 Example scoring:
-pythondef compute_evidence_merit(evidence):
+```python
+def compute_evidence_merit(evidence):
     # Source reliability (0-1)
     tool_calibration = get_tool_calibration(evidence.source.name)
-    
+```
+
     # Method quality (0-1)
     if evidence.procedural_flags.preregistered:
         method = 1.0
@@ -1190,9 +1217,11 @@ pythondef compute_evidence_merit(evidence):
     return merit
 Merit affects credence updates:
 High-merit evidence moves credence more than low-merit evidence:
-pythondef update_credence(prior_a, prior_b, evidence):
+```python
+def update_credence(prior_a, prior_b, evidence):
     merit = evidence.merit_score
-    
+```
+
     if evidence.role == "support":
         # High-merit evidence adds more to "kept" count
         new_a = prior_a + merit
@@ -1239,11 +1268,13 @@ The system uses NeffN_{\text{eff}}
 Neff​ for confidence calculations, preventing overcounting of correlated evidence.
 
 Overlap detection:
-pythondef estimate_overlap(evidence_a, evidence_b):
+```python
+def estimate_overlap(evidence_a, evidence_b):
     # Source overlap (same tool, same data)
     if evidence_a.source == evidence_b.source:
         return 0.8
-    
+```
+
     # Method overlap (same procedure)
     if evidence_a.method == evidence_b.method:
         return 0.6
@@ -1255,16 +1286,18 @@ pythondef estimate_overlap(evidence_a, evidence_b):
     
     return jaccard * 0.5  # Scale down for partial overlap
 This ensures confidence reflects actual information, not just volume of evidence.
-4.8 Evidence Collection Example (End-to-End)
+## 4.8. Evidence Collection Example (End-to-End)
 Let's walk through evidence collection for a specific promise.
 Promise:
-yamlpromise:
+```yaml
+promise:
   id: llm-input-logging-v1
   statement: "All LLM API calls log input prompts to audit database"
   credence_threshold: 0.95
   confidence_threshold: 0.70
 Developer commits code:
 bash$ git commit -m "Add LLM feature for customer support"
+```
 ```
 
 **System triggers evidence collection:**
@@ -1282,7 +1315,8 @@ Gathering evidence...
 Evidence collected: 6 items
 Evidence items:
 1. Direct Observational (Static Analysis)
-yamltype: direct_observational
+```yaml
+type: direct_observational
 title: "Semgrep: All llm.call() include audit_log.write()"
 source: semgrep-v1.45.0
 result:
@@ -1346,6 +1380,7 @@ merit: 0.91
 role: support
 Credence computation:
 Prior: Beta(10, 2) → B = 0.83 (based on historical keep rate)
+```
 
 Evidence 1 (merit=0.85, support): Beta(10.85, 2) → B = 0.844
 Evidence 2 (merit=0.78, support): Beta(11.63, 2) → B =DContinue0.853
@@ -1406,7 +1441,6 @@ This is the complete evidence-to-decision pipeline: automatic collection, merit-
 
 ---
 
-<a id="5-abductio"></a>
 ## 5. The ABDUCTIO Framework: Decision-Theoretic Verification
 
 Evidence and promises provide structure. **ABDUCTIO** provides the mathematics that transforms evidence into decisions.
@@ -1758,7 +1792,6 @@ def make_decision(B, C, params, evidence):
 
 ---
 
-<a id="6-sponsio"></a>
 ## 6. The Sponsio Protocol: Economic Accountability
 
 ABDUCTIO provides the mathematics. **Sponsio** provides the economics that ensure evaluators are honest.
@@ -2093,7 +2126,6 @@ DContinued 0.95)
 
 ---
 
-<a id="7-architecture"></a>
 ## 7. Integration: The Complete Architecture
 
 Now we assemble the pieces into a complete system.
@@ -2341,7 +2373,6 @@ All artifacts retrievable via IPFS CIDs.
 
 ---
 
-<a id="8-developer-experience"></a>
 ## 8. Developer Experience: How It Works in Practice
 
 Theory is valueless without usability. This section shows the actual developer experience.
@@ -2624,26 +2655,25 @@ Anomaly detected:
 
 ---
 
-<a id="9-economics"></a>
 ## 9. Economic Model and Incentives
 
 The framework's sustainability depends on its economic design. This section analyzes the incentive structure.
 
 ### 9.1 Value Proposition
 
-**For Organizations:**
+**For Organizations (modeled pre-pilot):**
 
 | Benefit | Quantification |
 |---------|----------------|
-| Incident prevention | 70-80% reduction in compliance violations |
-| Cost avoidance | $1.5M-$3M/year for typical AI company (50 engineers) |
-| Regulatory readiness | Audit trails satisfy EU AI Act, SOC2, ISO 27001 |
-| Developer productivity | 30% reduction in compliance-related rework |
-| Insurance discounts | 10-20% reduction in cyber/AI liability premiums |
+| Incident prevention | Modeled 70-80% reduction in compliance violations |
+| Cost avoidance | Modeled $1.5M-$3M/year for typical AI company (50 engineers) |
+| Regulatory readiness | Audit trails satisfy EU AI Act, SOC2, ISO 27001 (design objective) |
+| Developer productivity | Modeled 30% reduction in compliance-related rework |
+| Insurance discounts | Target 10-20% reduction in cyber/AI liability premiums (to be validated) |
 
-**ROI Calculation (Typical):**
+**ROI Calculation (Modeled example):**
 Organization: 50 engineers, 250 commits/day
-Current state:
+Current state (assumptions):
 
 10% of commits have compliance issues (25/day)
 20% reach production before discovery (5/day)
@@ -2651,7 +2681,7 @@ Average remediation: $50K/incident
 Monthly incidents: ~10
 Annual cost: $6M
 
-With framework:
+With framework (modeled):
 
 80% caught pre-commit (20/25 caught)
 Only 1/day reaches production
@@ -2660,7 +2690,7 @@ Annual cost: $1.2M
 
 Framework cost: $250K/year
 Net savings: $4.55M/year
-ROI: 18.2x
+ROI: 18.2x (modeled)
 
 **For Developers:**
 
@@ -2832,7 +2862,6 @@ Manipulation is -16x ROI (massive loss)
 
 ---
 
-<a id="10-validation"></a>
 ## 10. Validation and Formal Guarantees
 
 Claims require evidence. This section presents validation results.
@@ -2895,28 +2924,28 @@ Physics claims are more stable (lower $S_{\text{ref}}$) than software claims, re
 
 This justifies domain-specific SEUs.
 
-### 10.3 EVSI Fidelity
+### 10.3 EVSI Fidelity (Lab Study on Synthetic Repo)
 
-**Test:** Did EVSI correctly predict value of additional evidence?
-Sample: 100 compliance assessments
-Method: Compute EVSI, gather evidence, measure actual utility gain
-Results:
+**Test:** Did EVSI correctly predict value of additional evidence in a controlled, synthetic repository?
+Sample: 100 modeled compliance assessments on a lab repo with planted violations
+Method: Compute EVSI, gather evidence, measure modeled utility gain
+Results (simulation):
 Mean predicted EVSI: $2,340
 Mean realized utility gain: $2,180
 Correlation: 0.87
 Slope: 0.93 (slight underestimate)
 RMSE: $450 (19% relative error)
-Interpretation: EVSI is a good predictor, slight conservative bias
+Interpretation: In lab conditions, EVSI is a good predictor with a slight conservative bias
 
 **Why the conservative bias is acceptable:**
 - Better to slightly overestimate value of learning (gather a bit too much evidence)
 - Than underestimate (stop learning prematurely)
 
-### 10.4 False Positive/Negative Rates
+### 10.4 False Positive/Negative Rates (Synthetic Lab Evaluation)
 
 **Promise:** llm-input-logging
-**Sample:** 200 commits (100 compliant, 100 non-compliant, ground truth verified manually)
-Confusion Matrix:
+**Sample:** 200 synthetic commits (100 compliant, 100 non-compliant, ground truth verified manually)
+Confusion Matrix (lab study):
 Predicted Compliant    Predicted Non-Compliant
 Actually Compliant        94                    6
 Actually Non-Compliant     3                   97
@@ -2928,18 +2957,18 @@ Precision: 97%
 Recall (Sensitivity): 94%
 F1 Score: 0.95
 
-**Interpretation:**
+**Interpretation (modeled):**
 - System is conservative (slightly favors blocking)
 - False positive rate acceptable for developers (97% of good commits pass)
-- False negative rate means ~6% of violations require production verification
+- False negative rate means ~6% of violations would require downstream verification
 
-### 10.5 Production Validation
+### 10.5 Modeled Production Scenario (Pre-Pilot)
 
-**Pilot Program:** 3-month deployment at a mid-size AI company (30 engineers, 5 AI products)
+We have **not** run a production pilot yet. The following is a modeled scenario to illustrate how a three-month deployment could behave for a mid-size AI company (30 engineers, 5 AI products) once pilots begin.
 
-**Promises defined:** 8 (logging, fairness, privacy, safety, documentation)
+**Promises modeled:** 8 (logging, fairness, privacy, safety, documentation)
 
-**Results:**
+**Modeled results (counterfactual):**
 
 | Metric | Before | After | Change |
 |--------|--------|-------|--------|
@@ -2950,24 +2979,16 @@ F1 Score: 0.95
 | Developer satisfaction | N/A | 4.1/5 | Positive |
 | Compliance confidence | 2.8/5 | 4.6/5 | +64% |
 
-**Developer feedback (anonymous survey, n=28):**
-"Pre-commit checks initially felt like friction, but they save so much
-rework. I catch issues in 30 seconds instead of 3 weeks later." (4/5)
-"The evidence suggestions are helpful - it's not just 'no', it's 'fix this
-specific thing'." (5/5)
-"Some false positives early on, but they've decreased as the system learned
-our codebase." (3/5 → 4/5 over 3 months)
-"Merit scores make me take compliance seriously - it's now part of my
-professional reputation." (5/5)
-Mean rating: 4.1/5 ✅
+**Expected developer sentiment (from design-partner interviews, not a live survey):**
+- Pre-commit checks initially feel like friction but prevent weeks of rework.
+- Evidence suggestions are valuable when they point to specific fixes.
+- False positives should decline as the system learns the codebase.
+- Merit scores make compliance part of professional reputation.
 
-**Compliance Officer feedback:**
-"For the first time, I can see compliance status in real-time, not during
-quarterly audits. The audit trails are exactly what regulators asked for."
-"Sign-off rationales are incredibly valuable - when something goes wrong,
-we know exactly why the decision was made."
-"Initial setup took 2 weeks to define promises clearly, but that forced us
-to clarify our own policies - a valuable exercise."
+**Expected compliance officer perspective (hypothetical):**
+- Real-time compliance visibility replaces quarterly surprises.
+- Signed audit trails clarify decision rationale when issues arise.
+- Upfront promise definition forces policy clarity during onboarding.
 
 ### 10.6 Formal Guarantees (Proofs in Sponsio Yellow Paper)
 
@@ -3087,7 +3108,6 @@ Taken together:
 This is the right level of evidence for a pre-seed AI governance product. It avoids overstating real-world deployment while demonstrating that the promise-based, credence-driven architecture can already be exercised, inspected, and stress-tested today.
 
 
-<a id="11-objections"></a>
 ## 11. Addressing Common Objections
 
 Every new framework faces skepticism. This section addresses the strongest objections honestly, comparing the framework against realistic alternatives.
@@ -3254,10 +3274,10 @@ System recognizes: Need more high-merit evidence before deciding
 
 **Response:** **Economic value doesn't depend on regulation.**
 
-**Value drivers independent of regulation:**
-1. **Incident prevention:** $1.5M-$3M/year saved (empirically demonstrated)
-2. **Developer productivity:** 30% reduction in compliance rework
-3. **Insurance discounts:** 10-20% premium reduction (insurers love audit trails)
+**Value drivers independent of regulation (modeled pre-pilot):**
+1. **Incident prevention:** Modeled $1.5M-$3M/year savings based on counterfactual incident analyses
+2. **Developer productivity:** Modeled 30% reduction in compliance rework
+3. **Insurance discounts:** Target 10-20% premium reduction (to be validated with carriers)
 4. **Competitive advantage:** "We have verifiable AI governance" (customer trust)
 
 **Regulation amplifies but doesn't create the value.**
@@ -3353,7 +3373,6 @@ They're complementary, not competitive.
 
 ---
 
-<a id="12-roadmap"></a>
 ## 12. Implementation Roadmap
 
 ### 12.1 Phase 1: Core Framework (Months 1-6)
@@ -3461,7 +3480,6 @@ They're complementary, not competitive.
 
 ---
 
-<a id="13-conclusion"></a>
 ## 13. Conclusion
 
 AI governance today is broken. Organizations write policies that aren't enforced, discover violations months after they occur, and spend millions on remediation that could have been prevented with pre-deployment verification.
@@ -3493,11 +3511,11 @@ This whitepaper has introduced a framework that inverts the paradigm:
 5. Evaluators are economically incentivized to be accurate
 6. The system improves continuously through merit feedback loops
 
-**This is not theoretical.** The framework is:
-- **Formally proven:** Game-theoretic guarantees of coalition resistance
-- **Empirically validated:** ABM simulations, pilot programs, calibration studies
-- **Economically sound:** 18x ROI, self-sustaining evaluator marketplace
-- **Implementable:** Clear 3-year roadmap from MVP to platform
+**This is a pre-seed, pre-pilot framework.** To date, it is:
+- **Formally grounded:** Game-theoretic guarantees of coalition resistance
+- **Empirically explored in lab settings:** ABM simulations, modeled case studies, calibration exercises on synthetic repos
+- **Economically modeled:** Modeled ROI and marketplace dynamics ready to validate with early pilots
+- **Implementable:** Clear 3-year roadmap from MVP to platform, with pilot design partners in progress
 
 **The opportunity is immense:**
 - $500M-$1B TAM in AI governance
@@ -3520,7 +3538,6 @@ This framework isn't just about AI governance—it's about creating **verifiable
 
 ---
 
-<a id="14-appendices"></a>
 ## 14. Appendices
 
 ### Appendix A: Formal Notation Reference
