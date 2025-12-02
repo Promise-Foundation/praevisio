@@ -752,7 +752,7 @@ collection:
       trigger_event: 2025-11-15T10:00:00Z
       response_event: 2025-11-15T14:30:00Z
       delay_hours: 4.5
-      expected_delay_if_random: >72  # Response was unusually fast
+      expected_delay_if_random: ">72"  # Response was unusually fast
 Merit scoring:
 ```
 
@@ -3599,13 +3599,13 @@ promise:
   properties:
     id:
       type: string
-      pattern: "^[a-z0-9-]+$"
+      pattern: '^[a-z0-9-]+$'
     version:
       type: string
-      pattern: "^[0-9]+\.[0-9]+\.[0-9]+$"
+      pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
     domain:
       type: string
-      pattern: "^/[a-z0-9-/_]+$"
+      pattern: '^/[a-z0-9-/_]+$'
     statement:
       type: string
       minLength: 10

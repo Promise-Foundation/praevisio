@@ -7,13 +7,15 @@ This project follows Readme-Driven Development and an outside-in approach. The i
 ## Contents
 
 ```{toctree}
-:maxdepth: 2
+:maxdepth: 1
+:titlesonly:
 :caption: Project Docs
 
 white-paper
+api
+tutorials/index
 ```
 
 ## Getting started
 
 - To build these docs locally, see the top-level README for setup instructions.
-

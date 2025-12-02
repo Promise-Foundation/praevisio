@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+"""Typer-based command-line interface for praevisio.
+
+Commands map to application services. Run `python -m praevisio --help` to see
+available commands.
+"""
+
 import typer
 
 from ..application.configuration_service import ConfigurationService

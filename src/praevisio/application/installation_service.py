@@ -14,6 +14,12 @@ hooks:
 
 
 class InstallationService:
+    """Install a default .praevisio.yaml configuration file.
+
+    Parameters
+    - fs: file system adapter used to write the file
+    - config_path: target path for the configuration file
+    """
     def __init__(self, fs: FileSystemService, config_path: str = ".praevisio.yaml") -> None:
         self._fs = fs
         self._path = config_path
@@ -21,4 +27,3 @@ class InstallationService:
     def install(self) -> str:
         self._fs.write_text(self._path, DEFAULT_CONFIG)
         return self._path
-

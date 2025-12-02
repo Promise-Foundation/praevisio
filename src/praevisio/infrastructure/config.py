@@ -14,6 +14,7 @@ from ..domain.value_objects import HookType, FilePattern
 
 
 class InMemoryConfigLoader(ConfigLoader):
+    """Return a pre-built Configuration (useful for tests)."""
     def __init__(self, config: Configuration) -> None:
         self._config = config
 
@@ -22,6 +23,8 @@ class InMemoryConfigLoader(ConfigLoader):
 
 
 class YamlConfigLoader(ConfigLoader):
+    """Load Configuration from a YAML file on disk."""
+
     def load(self, path: str) -> Configuration:
         if yaml is None:
             raise RuntimeError("PyYAML is required to load YAML configuration")
@@ -43,4 +46,3 @@ class YamlConfigLoader(ConfigLoader):
             )
             hooks.append(hook)
         return Configuration(hooks=hooks)
-

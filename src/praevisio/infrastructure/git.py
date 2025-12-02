@@ -6,6 +6,7 @@ from ..domain.ports import GitRepository
 
 
 class InMemoryGitRepository(GitRepository):
+    """GitRepository adapter that stores staged files and message in memory."""
     def __init__(self, staged_files: List[str] | None = None, commit_message: str = "") -> None:
         self._staged = staged_files or []
         self._message = commit_message
@@ -15,4 +16,3 @@ class InMemoryGitRepository(GitRepository):
 
     def get_commit_message(self) -> str:
         return self._message
-
