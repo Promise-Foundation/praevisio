@@ -4,7 +4,7 @@ import typer
 
 from ..application.configuration_service import ConfigurationService
 from ..application.installation_service import InstallationService
-from ..application.services import HookOrchestrationService
+from ..application.services import HookOrchestrationService, evaluate_commit
 from ..application.validation_service import ValidationService
 from ..domain.value_objects import HookType
 from ..infrastructure.config import YamlConfigLoader
@@ -39,6 +39,13 @@ def pre_commit(config_path: str = ".praevisio.yaml") -> None:
     typer.echo(f"Ran {len(results)} hooks, skipped {len(skipped)}")
 
 
+@app.command("evaluate-commit")
+def evaluate_commit_cmd(path: str) -> None:
+    """Evaluate a single commit directory and print credence and verdict."""
+    result = evaluate_commit(path)
+    typer.echo(f"Credence: {result.credence}")
+    typer.echo(f"Verdict: {result.verdict}")
+
+
 def main() -> None:
     app()
-

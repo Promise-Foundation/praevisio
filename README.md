@@ -114,7 +114,18 @@ CLI entry point
 - praevisio (Typer-based):
   - uv run praevisio install        # writes a default .praevisio.yaml
   - uv run praevisio pre-commit     # loads config, validates, runs pre-commit hooks
+  - uv run praevisio evaluate-commit path/to/commit  # MVP evaluation (credence + verdict)
   - python -m praevisio             # equivalent entry point
+
+Outside-in MVP flow with a separate lab repo (praevisio-test)
+- In praevisio/: install as editable so the CLI and module are available to the lab
+  - pip install -e .
+- In praevisio-test/: write Behave tests that call the CLI, e.g.:
+  - praevisio evaluate-commit commits/compliant/c1
+- Minimal evaluation implemented:
+  - Reads app/src/llm_client.py in the commit directory
+  - If it contains a log(...) call → Credence 0.97 → Verdict green
+  - Otherwise → Credence 0.42 → Verdict red
 
 
 ## Development approach

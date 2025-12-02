@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from typing import Iterable, List
+import os
 
 from ..domain.models import Promise
 from ..domain.ports import PromiseRepository, GitRepository, ProcessExecutor
 from ..domain.config import Configuration
-from ..domain.entities import HookResult
+from ..domain.entities import HookResult, EvaluationResult
 from ..domain.services import HookSelectionService
 from ..domain.value_objects import ExitCode, HookType
 
@@ -66,3 +67,22 @@ class HookOrchestrationService:
         from ..domain.entities import CommitContext
 
         return CommitContext(staged_files=self._git.get_staged_files(), commit_message=self._git.get_commit_message())
+
+
+def evaluate_commit(path: str) -> EvaluationResult:
+    """Minimal MVP evaluation logic.
+
+    Reads app/src/llm_client.py in the given commit directory and searches for
+    a log( ... ) call. Returns a trivial credence and verdict accordingly.
+    """
+    file_path = os.path.join(path, "app", "src", "llm_client.py")
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            code = f.read()
+    except FileNotFoundError:
+        return EvaluationResult(credence=0.0, verdict="red")
+
+    has_logging = "log(" in code
+    credence = 0.97 if has_logging else 0.42
+    verdict = "green" if credence >= 0.95 else "red"
+    return EvaluationResult(credence=credence, verdict=verdict)

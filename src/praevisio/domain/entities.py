@@ -37,3 +37,8 @@ class CommitContext:
     staged_files: List[str]
     commit_message: str = ""
 
+
+@dataclass(frozen=True)
+class EvaluationResult:
+    credence: float
+    verdict: str
