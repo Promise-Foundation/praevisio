@@ -1,0 +1,39 @@
+id: tprm-vendor-update
+version: 0.1.0
+domain: /third_party/updates
+statement: >
+  All vendor-delivered software, models, or configurations must include a
+  cryptographically signed evidence bundle tied to the specific release,
+  demonstrating compliance with our security, privacy, and AI governance
+  requirements. No vendor update may be deployed without satisfying these
+  promises.
+
+severity: high
+critical: true
+
+success_criteria:
+  credence_threshold: 0.95
+  confidence_threshold: 0.70
+  evidence_types:
+    - provenance
+    - static_analysis
+    - procedural
+    - adversarial
+    - privacy_check
+
+parameters:
+  require_slsa_level: 2
+  require_sbom: true
+  max_cve_severity: "medium"
+  require_model_card: true
+  require_privacy_evidence: true
+  require_regression_tests: true
+  vendor_signature_alg: "sha256-rsa"
+
+metadata:
+  regulatory_mapping:
+    nist_csf: "ID.SC-1, ID.SC-4, PR.DS-1, PR.IP-12"
+    soc2: "CC7 (change mgmt), CC6 (vendor mgmt)"
+    hipaa: "164.308(b)(1) – BA controls"
+    pci_dss: "12.8.2 – Vendor security verification"
+    eu_ai_act: "Art. 15, Annex VIII – Third-party component governance"

@@ -1,0 +1,58 @@
+id: prompt-injection-defense
+version: 0.1.0
+domain: /llm/security
+statement: >
+  All user inputs to the LLM must pass through prompt injection detection
+  before being processed. The detection system must be actively deployed,
+  correctly configured, and capable of detecting at least 95% of known
+  prompt injection patterns from our test corpus.
+
+severity: high
+critical: true
+
+success_criteria:
+  credence_threshold: 0.92
+  confidence_threshold: 0.75
+  evidence_types:
+    - deployment_verification
+    - configuration_verification
+    - effectiveness_testing
+    - procedural
+
+parameters:
+  # Defense tool requirements
+  required_tool: rebuff
+  minimum_version: "0.5.0"
+
+  # Configuration requirements
+  required_config:
+    detection_threshold: 0.75  # Block if injection score > 0.75
+    enable_learning: true      # Self-hardening must be enabled
+    logging_enabled: true      # Must log all detections
+
+  # Effectiveness requirements
+  minimum_detection_rate: 0.95
+  test_corpus: prompt-injection-test-suite
+  corpus_size: 50  # Minimum test cases
+
+  # Integration requirements
+  coverage_requirement: 1.0  # 100% of LLM calls must go through defense
+  bypass_allowed: false      # No bypass mechanisms permitted
+
+  # Evidence weights
+  evidence_weights:
+    deployment: 0.25      # Is Rebuff actually running?
+    configuration: 0.20   # Is it configured correctly?
+    effectiveness: 0.40   # Does it catch injections?
+    integration: 0.15     # Are all LLM calls protected?
+
+stake:
+  credits: 0
+
+metadata:
+  regulatory_mapping:
+    nist_ai_rmf: "Manage 2.1: Protective mechanisms deployed"
+    eu_ai_act: "Article 15: Security by design"
+    nis2: "Technical measures for cybersecurity"
+  risk_level: high
+  defense_layer: input_validation

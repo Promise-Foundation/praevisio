@@ -1,0 +1,18 @@
+id: llm-logging-complete
+version: 0.1.0
+domain: /llm/observability
+statement: All code paths that send prompts to the LLM must log both the prompt and a trace ID for correlation.
+critical: true
+success_criteria:
+  credence_threshold: 0.95
+  evidence_types:
+    - procedural
+    - static_analysis
+  coverage_requirement: 0.95
+parameters:
+  required_fields:
+    - prompt
+    - trace_id
+  context_window: 5
+stake:
+  credits: 0

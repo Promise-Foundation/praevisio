@@ -2,13 +2,13 @@ id: llm-input-logging
 version: 0.1.0
 domain: /llm/observability
 statement: All LLM API calls must log input prompts.
+severity: high
 critical: true
 success_criteria:
   credence_threshold: 0.95
   evidence_types:
-    - procedural      # unit/integration tests
-    - pattern         # static analysis or heuristic pattern evidence
+    - procedural
+    - pattern
 parameters: {}
 stake:
   credits: 0
-

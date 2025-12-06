@@ -1,0 +1,72 @@
+id: pii-data-protection
+version: 0.1.0
+domain: /data/privacy
+statement: >
+  All user-provided text must be scanned for PII (Personally Identifiable
+  Information) before being processed by the LLM or stored in logs. Detected
+  PII must be masked or anonymized. The system must detect and mask at least
+  95% of common PII types including emails, phone numbers, SSNs, credit cards,
+  names, and addresses.
+
+severity: high
+critical: true
+
+success_criteria:
+  credence_threshold: 0.93
+  confidence_threshold: 0.75
+  evidence_types:
+    - deployment_verification
+    - effectiveness_testing
+    - integration_verification
+    - coverage_analysis
+    - procedural
+
+parameters:
+  # PII types that must be detected
+  required_pii_types:
+    - EMAIL_ADDRESS
+    - PHONE_NUMBER
+    - CREDIT_CARD
+    - US_SSN
+    - PERSON
+    - LOCATION
+    - DATE_TIME
+    - IP_ADDRESS
+    - IBAN_CODE
+    - MEDICAL_LICENSE
+
+  # Masking configuration
+  masking_strategy: replace  # Options: replace, redact, hash, encrypt, synthetic
+  placeholder_format: "[{entity_type}]"  # e.g., "[EMAIL]", "[PHONE_NUMBER]"
+
+  # Effectiveness thresholds
+  minimum_detection_rate: 0.95  # Must catch 95% of PII
+  maximum_false_positive_rate: 0.02  # Max 2% false positives
+
+  # Coverage requirements
+  coverage_requirement: 1.0  # 100% of LLM inputs must be scanned
+  bypass_allowed: false
+
+  # Privacy-utility tradeoff monitoring
+  track_utility_impact: true  # Measure how masking affects LLM usefulness
+  acceptable_utility_loss: 0.10  # Max 10% reduction in utility
+
+  # Evidence weights
+  evidence_weights:
+    deployment: 0.20
+    effectiveness: 0.40
+    integration: 0.20
+    coverage: 0.15
+    utility: 0.05  # Small weight for utility impact
+
+stake:
+  credits: 0
+
+metadata:
+  regulatory_mapping:
+    gdpr: "Article 5.1.c (data minimization), Article 25 (data protection by design)"
+    eu_ai_act: "Article 10 (data governance), Article 11 (technical documentation)"
+    iso_42001: "Control 6.2.3 (privacy risk management)"
+    ccpa: "Section 1798.100 (consumer data rights)"
+  risk_level: critical  # Privacy violations can be existential
+  data_category: pii

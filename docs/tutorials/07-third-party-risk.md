@@ -139,7 +139,7 @@ The vendor bundle becomes your *canonical evidence* for that update.
 
 Create a new file:
 
-#+begin_src yaml :tangle governance/promises/tprm-vendor-update.yaml
+```yaml
 id: tprm-vendor-update
 version: 0.1.0
 domain: /third_party/updates
@@ -179,7 +179,7 @@ metadata:
     hipaa: "164.308(b)(1) – BA controls"
     pci_dss: "12.8.2 – Vendor security verification"
     eu_ai_act: "Art. 15, Annex VIII – Third-party component governance"
-#+end_src
+```
 
 This promise enforces:
 
@@ -193,12 +193,12 @@ This promise enforces:
 
 Add a Praevisio evaluation step to your vendor integration pipeline:
 
-#+begin_src bash
+```bash
 praevisio evaluate-vendor \
   --bundle vendor_release.bundle \
   --promises governance/promises/tprm-vendor-update.yaml \
   --fail-on-violation
-#+end_src
+```
 
 Behind the scenes:
 
@@ -221,7 +221,7 @@ You deploy *proof*.
 
 * Example Failure Report
 
-#+begin_src
+```
 ❌ Vendor Update Blocked – Insufficient Evidence
 
 Bundle: bank-ml-model-v3.4.1.bundle
@@ -235,7 +235,7 @@ Failures:
 
 Deployment blocked per TPRM policy.
 Please contact vendor for corrected evidence.
-#+end_src
+```
 
 This is the kind of artifact regulators *love* because it is:
 - Deterministic  
@@ -250,9 +250,9 @@ This is the kind of artifact regulators *love* because it is:
 
 When you later generate your own bundle:
 
-#+begin_src bash
+```bash
 praevisio bundle create --release internal-api:v4.1.0
-#+end_src
+```
 
 Your bundle automatically includes:
 
