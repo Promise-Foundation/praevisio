@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Sequence
+from typing import Any, Dict, List, Sequence
 
 from .value_objects import HookType, ExitCode, FilePattern
 
@@ -42,3 +42,19 @@ class CommitContext:
 class EvaluationResult:
     credence: float
     verdict: str
+    details: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class StaticFinding:
+    file: str
+    line: int | None = None
+    code: str = ""
+
+
+@dataclass(frozen=True)
+class StaticAnalysisResult:
+    total_llm_calls: int
+    violations: int
+    coverage: float
+    findings: List[StaticFinding] = field(default_factory=list)

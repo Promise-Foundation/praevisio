@@ -309,3 +309,22 @@ This closes the last major governance gap:
 
 In Tutorial 8, you’ll learn how to *fuse* internal and external evidence into a unified supply-chain risk model, enabling multi-party change control for high-risk systems.
 
+
+You can verify that PII masking is actually deployed, configured correctly, and working effectively—both on test data and in integration.
+You understand the critical importance of ordering: PII masking must be the first defense layer so that no other component (including security defenses) ever sees real PII.
+You've learned to test both detection rate (did we find the PII?) and masking accuracy (did we remove it?), recognizing these are separate concerns.
+You understand the privacy-utility tradeoff and how to measure it explicitly rather than assuming masking doesn't hurt usefulness.
+You've created comprehensive evidence for GDPR data minimization, EU AI Act data governance, and ISO 42001 privacy risk management requirements.
+Most importantly, you've built a system where PII protection is verifiable, not just aspirational. You can prove to auditors that sensitive data is being masked before processing.
+Next Steps
+In Tutorial 7, you'll add the final piece: human oversight and risk registers. Not everything can or should be automated. Some governance decisions require human judgment, and Praevisio needs to account for that. You'll learn how to integrate manual review processes into the evidence pipeline, creating promises like "Any deployment with credence between 0.90-0.95 requires manual sign-off" and tracking those decisions in a formal risk register.
+You'll also see how all the tutorials connect: logging (T1-2), security (T4-5), and privacy (T6) are all evidence sources for a final "safe to deploy" promise that combines everything.
+For now, try expanding your PII detection to handle more complex cases:
+
+PII embedded in code (email in a URL: https://example.com/user/john@example.com)
+PII in multiple languages (if you have international users)
+Domain-specific sensitive data (your company's employee IDs, product codes, etc.)
+PII in structured data (JSON, CSV) not just natural language
+
+See how Presidio handles these edge cases. Tune the confidence threshold. Find the balance between detection coverage and false positive rate that works for your use case.
+You've just implemented verifiable privacy protection. When regulators ask "How do you ensure PII isn't processed inappropriately?", you can point to this system and say: "Every prompt is scanned, every PII instance is masked, and here's evidence that it's working correctly."

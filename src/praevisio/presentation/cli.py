@@ -6,6 +6,10 @@ Commands map to application services. Run `python -m praevisio --help` to see
 available commands.
 """
 
+import json
+import sys
+import stat
+from pathlib import Path
 import typer
 
 from ..application.configuration_service import ConfigurationService
@@ -31,26 +35,110 @@ def install(config_path: str = ".praevisio.yaml") -> None:
 
 
 @app.command("pre-commit")
-def pre_commit(config_path: str = ".praevisio.yaml") -> None:
-    # Minimal local run: load config, create simple git + executor, and run.
-    fs = LocalFileSystemService()
-    loader = YamlConfigLoader()
-    config = ConfigurationService(loader, fs, config_path).load()
-    ValidationService().validate(config)
-    # NOTE: replace InMemoryGitRepository with a real Git adapter later.
-    git = InMemoryGitRepository(staged_files=[])
-    executor = RecordingProcessExecutor(default_exit_code=0)
-    results = HookOrchestrationService(git, executor).run_hooks(HookType.PRE_COMMIT, config)
-    skipped = [r for r in results if r.skipped]
-    typer.echo(f"Ran {len(results)} hooks, skipped {len(skipped)}")
+def pre_commit(
+    path: str = typer.Argument(".", help="Path to the repository/commit to evaluate."),
+    threshold: float = typer.Option(
+        0.95, "--threshold", help="Credence threshold required to pass the pre-commit gate."
+    ),
+) -> None:
+    """Local governance gate to block commits when credence is below threshold."""
+    result = evaluate_commit(path)
+    if result.credence < threshold:
+        typer.echo("[praevisio][pre-commit] ❌ Critical promises not satisfied. Commit aborted.")
+        raise typer.Exit(code=1)
+    typer.echo("[praevisio][pre-commit] ✅ All critical promises satisfied.")
 
 
 @app.command("evaluate-commit")
-def evaluate_commit_cmd(path: str) -> None:
+def evaluate_commit_cmd(
+    path: str,
+    json_output: bool = typer.Option(
+        False,
+        "--json-output",
+        "--json",
+        help="Print structured JSON output instead of plain text.",
+    ),
+) -> None:
     """Evaluate a single commit directory and print credence and verdict."""
     result = evaluate_commit(path)
-    typer.echo(f"Credence: {result.credence}")
-    typer.echo(f"Verdict: {result.verdict}")
+    if json_output:
+        typer.echo(json.dumps({
+            "credence": result.credence,
+            "verdict": result.verdict,
+            "details": result.details,
+        }, indent=2))
+    else:
+        typer.echo(f"Credence: {result.credence:.3f}")
+        typer.echo(f"Verdict: {result.verdict}")
+
+
+@app.command("ci-gate")
+def ci_gate(
+    path: str = typer.Argument(".", help="Path to the target repository/commit."),
+    severity: str = typer.Option("high", "--severity", help="Severity level to enforce."),
+    fail_on_violation: bool = typer.Option(
+        False, "--fail-on-violation", help="Exit with error on violations."
+    ),
+    output: str = typer.Option(
+        "logs/ci-gate-report.json",
+        "--output",
+        help="Where to write JSON report of evaluated promises.",
+    ),
+    threshold: float = typer.Option(
+        0.95, "--threshold", help="Credence threshold for passing high-severity promises."
+    ),
+) -> None:
+    """Run Praevisio as a CI governance gate."""
+    result = evaluate_commit(path)
+
+    report_entry = {
+        "id": "llm-input-logging",
+        "credence": result.credence,
+        "verdict": result.verdict,
+        "threshold": threshold,
+        "severity": severity,
+    }
+    report = [report_entry]
+
+    out_path = Path(output)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    should_fail = fail_on_violation and any(r["credence"] < r["threshold"] for r in report)
+    if should_fail:
+        typer.echo("[praevisio][ci-gate] ❌ GATE FAILED")
+        sys.exit(1)
+
+    typer.echo("[praevisio][ci-gate] ✅ GATE PASSED")
+
+
+@app.command("install-hooks")
+def install_hooks(
+    git_dir: str = typer.Option(
+        ".", "--git-dir", help="Root of the git repository where hooks should be installed."
+    )
+) -> None:
+    """Install a git pre-commit hook that runs `praevisio pre-commit`."""
+    repo_root = Path(git_dir).resolve()
+    hooks_dir = repo_root / ".git" / "hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+
+    hook_path = hooks_dir / "pre-commit"
+    script = """#!/usr/bin/env sh
+# Praevisio governance pre-commit hook
+
+praevisio pre-commit
+STATUS=$?
+if [ "$STATUS" -ne 0 ]; then
+  echo "[praevisio][pre-commit] ❌ Critical promises not satisfied. Commit aborted."
+  exit "$STATUS"
+fi
+exit 0
+"""
+    hook_path.write_text(script, encoding="utf-8")
+    mode = hook_path.stat().st_mode
+    hook_path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    typer.echo(f"Installed pre-commit hook at {hook_path}")
 
 
 def main() -> None:

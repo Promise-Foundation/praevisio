@@ -3,12 +3,15 @@ from __future__ import annotations
 from typing import Iterable, List
 import os
 
+import pytest
+
 from ..domain.models import Promise
-from ..domain.ports import PromiseRepository, GitRepository, ProcessExecutor
+from ..domain.ports import PromiseRepository, GitRepository, ProcessExecutor, StaticAnalyzer
 from ..domain.config import Configuration
 from ..domain.entities import HookResult, EvaluationResult
 from ..domain.services import HookSelectionService
 from ..domain.value_objects import ExitCode, HookType
+from ..infrastructure.static_analysis_semgrep import SemgrepStaticAnalyzer
 
 
 class PromiseService:
@@ -69,20 +72,76 @@ class HookOrchestrationService:
         return CommitContext(staged_files=self._git.get_staged_files(), commit_message=self._git.get_commit_message())
 
 
-def evaluate_commit(path: str) -> EvaluationResult:
-    """Minimal MVP evaluation logic.
-
-    Reads app/src/llm_client.py in the given commit directory and searches for
-    a log( ... ) call. Returns a trivial credence and verdict accordingly.
+def evaluate_commit(
+    path: str,
+    analyzer: StaticAnalyzer | None = None,
+) -> EvaluationResult:
     """
-    file_path = os.path.join(path, "app", "src", "llm_client.py")
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            code = f.read()
-    except FileNotFoundError:
-        return EvaluationResult(credence=0.0, verdict="red")
+    Evaluate whether a commit satisfies the llm-logging-complete promise.
 
-    has_logging = "log(" in code
-    credence = 0.97 if has_logging else 0.42
+    Evidence sources:
+    1. Pytest run of app/tests/test_logging.py (procedural evidence).
+    2. SemgrepStaticAnalyzer over the given path (static_analysis evidence).
+
+    This implementation is intentionally simple and tutorial-friendly.
+    """
+
+    analyzer = analyzer or SemgrepStaticAnalyzer()
+
+    # --------------------
+    # 1) Procedural evidence (pytest)
+    # --------------------
+    original_cwd = os.getcwd()
+    try:
+        os.chdir(path)
+        # Run only the specific test file used in the tutorial
+        test_result_code = pytest.main(
+            ["app/tests/test_logging.py", "-q", "--disable-warnings"]
+        )
+    finally:
+        os.chdir(original_cwd)
+
+    test_passes = (test_result_code == 0)
+
+    # --------------------
+    # 2) Static analysis evidence (Semgrep)
+    # --------------------
+    sa_result = analyzer.analyze(path)
+    coverage = sa_result.coverage
+    total_calls = sa_result.total_llm_calls
+    violations = sa_result.violations
+
+    # --------------------
+    # 3) Fuse evidence into credence
+    # --------------------
+    # Weighting scheme: tests 40%, Semgrep coverage 60%.
+    test_contribution = 0.4 if test_passes else 0.0
+    semgrep_contribution = 0.6 * coverage
+
+    credence = test_contribution + semgrep_contribution
+
+    # Modifier: failing tests cap credence
+    if not test_passes:
+        credence = min(credence, 0.70)
+
+    # Modifier: very low coverage penalized
+    if coverage < 0.85:
+        credence *= 0.90
+
+    # Modifier: if there are no LLM calls at all, treat as neutral success
+    if total_calls == 0:
+        credence = 0.80
+
     verdict = "green" if credence >= 0.95 else "red"
-    return EvaluationResult(credence=credence, verdict=verdict)
+
+    details = {
+        "test_passes": test_passes,
+        "semgrep_coverage": coverage,
+        "total_llm_calls": total_calls,
+        "violations_found": violations,
+        "findings": [f.__dict__ for f in sa_result.findings],
+        "test_contribution": test_contribution,
+        "semgrep_contribution": semgrep_contribution,
+    }
+
+    return EvaluationResult(credence=credence, verdict=verdict, details=details)

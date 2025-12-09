@@ -6,7 +6,7 @@ from typing import Optional, Iterable, List
 from .models import Promise
 from .value_objects import HookType
 from .config import Configuration
-from .entities import CommitContext
+from .entities import CommitContext, StaticAnalysisResult
 
 
 class PromiseRepository(ABC):
@@ -58,4 +58,13 @@ class ConfigLoader(ABC):
 
     @abstractmethod
     def load(self, path: str) -> Configuration:  # pragma: no cover - interface
+        raise NotImplementedError
+
+
+class StaticAnalyzer(ABC):
+    """Port for running static analysis over a commit / code tree."""
+
+    @abstractmethod
+    def analyze(self, path: str) -> StaticAnalysisResult:  # pragma: no cover - interface
+        """Analyze code under `path` and return a structured result."""
         raise NotImplementedError

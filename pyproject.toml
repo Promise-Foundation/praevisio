@@ -19,6 +19,8 @@ classifiers = [
 dependencies = [
   "typer>=0.12",
   "PyYAML>=6.0",
+  "pytest>=7.4",
+  "semgrep",
 ]
 
 [project.urls]
