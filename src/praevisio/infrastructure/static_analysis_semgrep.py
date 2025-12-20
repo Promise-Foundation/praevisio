@@ -28,6 +28,7 @@ class SemgrepStaticAnalyzer(StaticAnalyzer):
         rules_path = self._rules_path
         if not rules_path.is_absolute():
             rules_path = root / rules_path
+        rules_path = rules_path.resolve()
         if not rules_path.exists():
             return StaticAnalysisResult(
                 total_llm_calls=0,
