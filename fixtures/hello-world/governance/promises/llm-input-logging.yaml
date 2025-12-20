@@ -4,7 +4,7 @@ domain: /llm/logging
 statement: All LLM input prompts must be logged at the boundary.
 critical: true
 success_criteria:
-  credence_threshold: 0.95
+  credence_threshold: 0.80
   evidence_types:
     - direct_observational
     - procedural

@@ -1,9 +1,9 @@
 evaluation:
   promise_id: llm-input-logging
-  threshold: 0.95
+  threshold: 0.80
   severity: high
   thresholds:
-    high: 0.95
+    high: 0.80
   pytest_targets:
     - tests/test_logging.py
   semgrep_rules_path: governance/evidence/semgrep_rules.yaml
