@@ -57,10 +57,12 @@ Layers
   - Services: HookSelectionService (type filtering, dependency ordering, file pattern matching)
   - Ports: PromiseRepository, GitRepository, ProcessExecutor, FileSystemService, ConfigLoader
 - Application (src/praevisio/application): Use cases/orchestration
-  - HookOrchestrationService: run hooks of a given HookType in correct order
+  - HookOrchestrationService (hook_service.py): run hooks of a given HookType in correct order
+  - PromiseService (promise_service.py): register and persist promises
   - ConfigurationService: load .praevisio.yaml into domain Configuration
   - InstallationService: write a default .praevisio.yaml
   - ValidationService: validate configuration & hook definitions
+  - services.py: compatibility re-exports for older imports
 - Infrastructure (src/praevisio/infrastructure): Adapters to ports
   - git.py (InMemoryGitRepository), process.py (RecordingProcessExecutor), filesystem.py (LocalFileSystemService), config.py (YamlConfigLoader, InMemoryConfigLoader)
   - Planned: ApiClient adapter(s)

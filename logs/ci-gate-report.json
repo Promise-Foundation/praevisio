@@ -1,0 +1,16 @@
+[
+  {
+    "id": "llm-input-logging",
+    "credence": 0.7,
+    "verdict": "red",
+    "threshold": 0.95,
+    "severity": "high",
+    "applicable": true,
+    "status": "fail",
+    "reasons": [],
+    "audit_path": null,
+    "audit_sha256": null,
+    "manifest_path": null,
+    "manifest_sha256": null
+  }
+]

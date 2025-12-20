@@ -1,0 +1,11 @@
+{
+  "callsite_rule_id": "llm-call-site",
+  "coverage": 0.0,
+  "error": null,
+  "findings": [],
+  "rules_path": "governance/evidence/semgrep_rules.yaml",
+  "skipped": false,
+  "total_calls": 0,
+  "violation_rule_id": "llm-call-must-log",
+  "violations": 0
+}

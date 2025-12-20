@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from behave import given, when, then
 
-from praevisio.application.services import PromiseService
+from praevisio.application.promise_service import PromiseService
 from praevisio.infrastructure.repositories import InMemoryPromiseRepository
 
 
@@ -29,4 +29,3 @@ def step_impl_assert_id(context, expected_id: str):
 @then('the returned promise has statement "{expected_statement}"')
 def step_impl_assert_statement(context, expected_statement: str):
     assert context.result.statement == expected_statement
-

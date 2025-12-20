@@ -12,11 +12,13 @@ from pathlib import Path
 from typing import Optional
 import typer
 
+from abductio_core.application.use_cases.replay_session import replay_session
+
+from ..application.engine import PraevisioEngine
 from ..application.evaluation_service import EvaluationService
 from ..application.installation_service import InstallationService
-from ..domain.evaluation_config import EvaluationConfig
-from ..infrastructure.config import YamlConfigLoader
 from ..infrastructure.filesystem import LocalFileSystemService
+from ..infrastructure.config import YamlConfigLoader
 
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -26,10 +28,15 @@ def build_evaluation_service() -> EvaluationService:
     return EvaluationService()
 
 
-def load_configuration(path: str):
+def build_engine() -> PraevisioEngine:
     loader = YamlConfigLoader()
+    fs = LocalFileSystemService()
+    return PraevisioEngine(loader, fs, evaluation_service=build_evaluation_service())
+
+
+def load_configuration(engine: PraevisioEngine, path: str):
     try:
-        return loader.load(path)
+        return engine.load_config(path)
     except FileNotFoundError:
         typer.echo(f"[praevisio] Config not found: {path}")
         raise typer.Exit(code=2)
@@ -54,21 +61,15 @@ def pre_commit(
     ),
 ) -> None:
     """Local governance gate to block commits when credence is below threshold."""
-    service = build_evaluation_service()
-    config = load_configuration(config_path)
+    engine = build_engine()
+    config = load_configuration(engine, config_path)
     evaluation = config.evaluation
-    effective_threshold = threshold if threshold is not None else evaluation.threshold
-    evaluation = EvaluationConfig(
-        promise_id=evaluation.promise_id,
-        threshold=effective_threshold,
-        pytest_args=evaluation.pytest_args,
-        pytest_targets=evaluation.pytest_targets,
-        semgrep_rules_path=evaluation.semgrep_rules_path,
-        thresholds=evaluation.thresholds,
-    )
-    result = service.evaluate_path(path, config=evaluation)
-    applicable = result.details.get("applicable", True)
-    if applicable and (result.credence or 0.0) < evaluation.threshold:
+    gate = engine.pre_commit_gate(path, evaluation, threshold_override=threshold)
+    result = gate.evaluation
+    if result.verdict == "error":
+        typer.echo("[praevisio][pre-commit] ❌ Evaluation error. Commit aborted.")
+        raise typer.Exit(code=1)
+    if gate.should_fail:
         typer.echo("[praevisio][pre-commit] ❌ Critical promises not satisfied. Commit aborted.")
         raise typer.Exit(code=1)
     typer.echo("[praevisio][pre-commit] ✅ All critical promises satisfied.")
@@ -91,19 +92,11 @@ def evaluate_commit_cmd(
     ),
 ) -> None:
     """Evaluate a single commit directory and print credence and verdict."""
-    service = build_evaluation_service()
-    config = load_configuration(config_path)
+    engine = build_engine()
+    config = load_configuration(engine, config_path)
     evaluation = config.evaluation
-    effective_threshold = threshold if threshold is not None else evaluation.threshold
-    evaluation = EvaluationConfig(
-        promise_id=evaluation.promise_id,
-        threshold=effective_threshold,
-        pytest_args=evaluation.pytest_args,
-        pytest_targets=evaluation.pytest_targets,
-        semgrep_rules_path=evaluation.semgrep_rules_path,
-        thresholds=evaluation.thresholds,
-    )
-    result = service.evaluate_path(path, config=evaluation)
+    evaluation = engine.apply_threshold(evaluation, threshold, evaluation.severity)
+    result = engine.evaluate(path, evaluation)
     if json_output:
         typer.echo(json.dumps({
             "credence": result.credence,
@@ -119,7 +112,9 @@ def evaluate_commit_cmd(
 @app.command("ci-gate")
 def ci_gate(
     path: str = typer.Argument(".", help="Path to the target repository/commit."),
-    severity: str = typer.Option("high", "--severity", help="Severity level to enforce."),
+    severity: Optional[str] = typer.Option(
+        None, "--severity", help="Severity level to enforce."
+    ),
     fail_on_violation: bool = typer.Option(
         False, "--fail-on-violation", help="Exit with error on violations."
     ),
@@ -136,49 +131,23 @@ def ci_gate(
     ),
 ) -> None:
     """Run Praevisio as a CI governance gate."""
-    service = build_evaluation_service()
-    config = load_configuration(config_path)
+    engine = build_engine()
+    config = load_configuration(engine, config_path)
     evaluation = config.evaluation
-    severity_threshold = evaluation.thresholds.get(severity)
-    if threshold is not None:
-        effective_threshold = threshold
-    elif severity_threshold is not None:
-        effective_threshold = severity_threshold
-    else:
-        effective_threshold = evaluation.threshold
-    evaluation = EvaluationConfig(
-        promise_id=evaluation.promise_id,
-        threshold=effective_threshold,
-        pytest_args=evaluation.pytest_args,
-        pytest_targets=evaluation.pytest_targets,
-        semgrep_rules_path=evaluation.semgrep_rules_path,
-        thresholds=evaluation.thresholds,
+    gate = engine.ci_gate(
+        path,
+        evaluation,
+        severity=severity,
+        threshold_override=threshold,
+        fail_on_violation=fail_on_violation,
     )
-    result = service.evaluate_path(path, config=evaluation)
-
-    report_entry = {
-        "id": evaluation.promise_id,
-        "credence": result.credence,
-        "verdict": result.verdict,
-        "threshold": evaluation.threshold,
-        "severity": severity,
-        "applicable": result.details.get("applicable", True),
-    }
-    report = [report_entry]
+    report = [gate.report_entry]
 
     out_path = Path(output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
-    should_fail = False
-    if fail_on_violation:
-        for entry in report:
-            applicable = entry.get("applicable", True)
-            credence = entry.get("credence")
-            if applicable and credence is not None and credence < entry["threshold"]:
-                should_fail = True
-                break
-    if should_fail:
+    if gate.should_fail:
         typer.echo("[praevisio][ci-gate] ❌ GATE FAILED")
         raise typer.Exit(code=1)
 
@@ -212,6 +181,98 @@ exit 0
     mode = hook_path.stat().st_mode
     hook_path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     typer.echo(f"Installed pre-commit hook at {hook_path}")
+
+
+@app.command("replay-audit")
+def replay_audit(
+    audit_path: Optional[str] = typer.Argument(
+        None, help="Path to an Abductio audit JSON file."
+    ),
+    latest: bool = typer.Option(
+        False, "--latest", help="Replay the most recent audit under the runs directory."
+    ),
+    runs_dir: str = typer.Option(
+        ".praevisio/runs", "--runs-dir", help="Base directory for run artifacts."
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json-output",
+        "--json",
+        help="Print structured JSON output instead of plain text.",
+    ),
+) -> None:
+    """Replay an Abductio audit trace and print the reconstructed ledger."""
+    audit_file = Path(audit_path) if audit_path else None
+    if latest:
+        audit_file = _latest_audit_file(Path(runs_dir))
+        if audit_file is None:
+            typer.echo("[praevisio] No audits found.")
+            raise typer.Exit(code=2)
+    if audit_file is None:
+        typer.echo("[praevisio] audit_path is required unless --latest is used.")
+        raise typer.Exit(code=2)
+    audit = json.loads(audit_file.read_text(encoding="utf-8"))
+    result = replay_session(audit)
+    if json_output:
+        typer.echo(json.dumps(result.to_dict_view(), indent=2))
+        return
+    typer.echo(f"Stop reason: {result.stop_reason}")
+    typer.echo(f"Ledger: {result.ledger}")
+    roots = result.roots or {}
+    for rid, root in roots.items():
+        k_root = root.get("k_root")
+        if k_root is not None:
+            typer.echo(f"Root {rid} k_root: {k_root}")
+
+
+@app.command("show-run")
+def show_run(
+    run_id: str = typer.Argument(..., help="Run identifier under the runs directory."),
+    runs_dir: str = typer.Option(
+        ".praevisio/runs", "--runs-dir", help="Base directory for run artifacts."
+    ),
+) -> None:
+    """Show a summary of a stored run (manifest + audit paths)."""
+    run_root = Path(runs_dir) / run_id
+    manifest_path = run_root / "manifest.json"
+    audit_path = run_root / "audit.json"
+    if not manifest_path.exists():
+        typer.echo(f"[praevisio] manifest not found: {manifest_path}")
+        raise typer.Exit(code=2)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    typer.echo(f"Run: {run_id}")
+    metadata = manifest.get("metadata", {})
+    if metadata:
+        typer.echo(f"Timestamp: {metadata.get('timestamp_utc')}")
+        typer.echo(f"Praevisio: {metadata.get('praevisio_version')}")
+        typer.echo(f"Abductio: {metadata.get('abductio_core_version')}")
+    typer.echo(f"Manifest: {manifest_path}")
+    if audit_path.exists():
+        typer.echo(f"Audit: {audit_path}")
+    artifacts = manifest.get("artifacts", [])
+    if artifacts:
+        typer.echo("Artifacts:")
+        for item in artifacts:
+            kind = item.get("kind")
+            path = item.get("path")
+            sha = item.get("sha256")
+            typer.echo(f"- {kind}: {path} ({sha})")
+
+
+def _latest_audit_file(runs_dir: Path) -> Path | None:
+    if not runs_dir.exists():
+        return None
+    candidates = []
+    for entry in runs_dir.iterdir():
+        if not entry.is_dir():
+            continue
+        audit_path = entry / "audit.json"
+        if audit_path.exists():
+            candidates.append(audit_path)
+    if not candidates:
+        return None
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return candidates[0]
 
 
 def main() -> None:

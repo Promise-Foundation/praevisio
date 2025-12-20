@@ -1,0 +1,8 @@
+evaluation:
+  promise_id: llm-input-logging
+  threshold: 0.95
+  thresholds:
+    high: 0.95
+  pytest_targets: []
+  semgrep_rules_path: governance/evidence/semgrep_rules.yaml
+hooks: []

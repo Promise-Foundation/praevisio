@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from behave import given, when, then
 
-from praevisio.application.services import HookOrchestrationService
+from praevisio.application.hook_service import HookOrchestrationService
 from praevisio.domain.config import Configuration
 from praevisio.domain.entities import Hook
 from praevisio.domain.services import HookSelectionService

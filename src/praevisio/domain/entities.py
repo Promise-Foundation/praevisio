@@ -58,3 +58,4 @@ class StaticAnalysisResult:
     violations: int
     coverage: float
     findings: List[StaticFinding] = field(default_factory=list)
+    error: str | None = None

@@ -11,6 +11,9 @@ praevisio.application
    :recursive:
 
    configuration_service
+   engine
+   hook_service
    installation_service
+   promise_service
    services
    validation_service

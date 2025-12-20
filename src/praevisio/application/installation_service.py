@@ -7,8 +7,26 @@ DEFAULT_CONFIG = """
 evaluation:
   promise_id: example-promise
   threshold: 0.95
+  severity: high
   pytest_targets: []
-  semgrep_rules_path: governance/evidence/semgrep_rules.yaml
+  semgrep_rules_path: ""
+  semgrep_callsite_rule_id: llm-call-site
+  semgrep_violation_rule_id: llm-call-must-log
+  abductio_credits: 6
+  abductio_tau: 0.70
+  abductio_epsilon: 0.05
+  abductio_gamma: 0.20
+  abductio_alpha: 0.40
+  abductio_required_slots:
+    - slot_key: feasibility
+      role: NEC
+    - slot_key: availability
+      role: NEC
+    - slot_key: fit_to_key_features
+      role: NEC
+    - slot_key: defeater_resistance
+      role: NEC
+  run_dir: ".praevisio/runs"
   thresholds:
     high: 0.95
 hooks:

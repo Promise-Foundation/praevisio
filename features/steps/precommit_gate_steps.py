@@ -12,11 +12,31 @@ import praevisio.presentation.cli as cli_module
 from praevisio.domain.entities import EvaluationResult
 
 
+def _cleanup_tmpdir(context) -> None:
+    if getattr(context, "_tmpdir_cleaned", False):
+        return
+    if getattr(context, "original_cwd", None):
+        os.chdir(context.original_cwd)
+    if getattr(context, "tmpdir", None):
+        context.tmpdir.cleanup()
+    context._tmpdir_cleaned = True
+
+
+def _safe_getcwd() -> str:
+    try:
+        return os.getcwd()
+    except FileNotFoundError:
+        repo_root = Path(__file__).resolve().parents[2]
+        os.chdir(repo_root)
+        return os.getcwd()
+
+
 @given("a git working directory with no existing pre-commit hook")
 def step_git_workdir_without_hook(context) -> None:
     """Set up a temporary git repository without a pre-commit hook."""
+    context._tmpdir_cleaned = False
     context.tmpdir = TemporaryDirectory()
-    context.original_cwd = os.getcwd()
+    context.original_cwd = _safe_getcwd()
     os.chdir(context.tmpdir.name)
 
     git_hooks = Path(".git/hooks")
@@ -72,6 +92,7 @@ def step_precommit_hook_invokes_praevisio(context) -> None:
         f"Expected pre-commit hook to call 'praevisio pre-commit', "
         f"but got:\n{content}"
     )
+    _cleanup_tmpdir(context)
 
 
 @given("the evaluation credence for critical promises will be {credence:f}")
@@ -106,8 +127,7 @@ def step_run_precommit(context) -> None:
     if getattr(context, "_original_build_service", None) is not None:
         cli_module.build_evaluation_service = context._original_build_service
 
-    os.chdir(context.original_cwd)
-    context.tmpdir.cleanup()
+    _cleanup_tmpdir(context)
 
 
 @then("the pre-commit gate should pass")

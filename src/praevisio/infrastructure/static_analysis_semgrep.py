@@ -10,15 +10,17 @@ from ..domain.ports import StaticAnalyzer
 
 
 class SemgrepStaticAnalyzer(StaticAnalyzer):
-    """StaticAnalyzer implementation using Semgrep.
+    """StaticAnalyzer implementation using Semgrep."""
 
-    Expects a Semgrep rules file at governance/evidence/semgrep_rules.yaml
-    relative to the directory where Praevisio is executed (i.e., the target
-    project, such as praevisio-test).
-    """
-
-    def __init__(self, rules_path: Path | None = None) -> None:
+    def __init__(
+        self,
+        rules_path: Path | None = None,
+        callsite_rule_id: str = "llm-call-site",
+        violation_rule_id: str = "llm-call-must-log",
+    ) -> None:
         self._rules_path = rules_path or Path("governance/evidence/semgrep_rules.yaml")
+        self._callsite_rule_id = callsite_rule_id
+        self._violation_rule_id = violation_rule_id
 
     def analyze(self, path: str) -> StaticAnalysisResult:
         # Ensure rules file exists in the target project
@@ -27,16 +29,20 @@ class SemgrepStaticAnalyzer(StaticAnalyzer):
         if not rules_path.is_absolute():
             rules_path = root / rules_path
         if not rules_path.exists():
-            # Fail soft: if no rules, treat as "no static evidence"
             return StaticAnalysisResult(
-                total_llm_calls=0, violations=0, coverage=0.0, findings=[]
+                total_llm_calls=0,
+                violations=0,
+                coverage=0.0,
+                findings=[],
+                error=f"semgrep rules file not found at {rules_path}",
             )
 
         # First: run Semgrep with JSON output using our governance rules
         result = subprocess.run(
-            ["semgrep", "--config", str(rules_path), "--json", path],
+            ["semgrep", "--config", str(rules_path), "--json", "."],
             capture_output=True,
             text=True,
+            cwd=path,
         )
 
         if result.returncode >= 2:
@@ -50,10 +56,10 @@ class SemgrepStaticAnalyzer(StaticAnalyzer):
         findings = output.get("results", [])
 
         llm_violations = [
-            f for f in findings if f.get("check_id") == "llm-call-must-log"
+            f for f in findings if f.get("check_id") == self._violation_rule_id
         ]
         llm_call_sites = [
-            f for f in findings if f.get("check_id") == "llm-call-site"
+            f for f in findings if f.get("check_id") == self._callsite_rule_id
         ]
 
         total_calls = len(llm_call_sites)
@@ -79,4 +85,5 @@ class SemgrepStaticAnalyzer(StaticAnalyzer):
             violations=num_violations,
             coverage=coverage,
             findings=findings_struct,
+            error=None,
         )

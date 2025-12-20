@@ -34,15 +34,28 @@ class YamlConfigLoader(ConfigLoader):
         evaluation_raw = raw.get("evaluation", {}) or {}
         defaults = EvaluationConfig()
         thresholds = evaluation_raw.get("thresholds", {}) or {}
+        rules_path_raw = evaluation_raw.get("semgrep_rules_path", defaults.semgrep_rules_path)
+        callsite_rule_raw = evaluation_raw.get("semgrep_callsite_rule_id", defaults.semgrep_callsite_rule_id)
+        violation_rule_raw = evaluation_raw.get("semgrep_violation_rule_id", defaults.semgrep_violation_rule_id)
         evaluation = EvaluationConfig(
             promise_id=evaluation_raw.get("promise_id", defaults.promise_id),
             threshold=float(evaluation_raw.get("threshold", defaults.threshold)),
+            severity=evaluation_raw.get("severity", defaults.severity),
             pytest_args=list(evaluation_raw.get("pytest_args", defaults.pytest_args)),
             pytest_targets=list(evaluation_raw.get("pytest_targets", defaults.pytest_targets)),
-            semgrep_rules_path=str(
-                evaluation_raw.get("semgrep_rules_path", defaults.semgrep_rules_path)
-            ),
+            semgrep_rules_path="" if rules_path_raw is None else str(rules_path_raw),
+            semgrep_callsite_rule_id="" if callsite_rule_raw is None else str(callsite_rule_raw),
+            semgrep_violation_rule_id="" if violation_rule_raw is None else str(violation_rule_raw),
             thresholds={k: float(v) for k, v in thresholds.items()},
+            abductio_credits=int(evaluation_raw.get("abductio_credits", defaults.abductio_credits)),
+            abductio_tau=float(evaluation_raw.get("abductio_tau", defaults.abductio_tau)),
+            abductio_epsilon=float(evaluation_raw.get("abductio_epsilon", defaults.abductio_epsilon)),
+            abductio_gamma=float(evaluation_raw.get("abductio_gamma", defaults.abductio_gamma)),
+            abductio_alpha=float(evaluation_raw.get("abductio_alpha", defaults.abductio_alpha)),
+            abductio_required_slots=list(
+                evaluation_raw.get("abductio_required_slots", defaults.abductio_required_slots)
+            ),
+            run_dir=str(evaluation_raw.get("run_dir", defaults.run_dir)),
         )
         hooks = []
         for item in raw.get("hooks", []) or []:

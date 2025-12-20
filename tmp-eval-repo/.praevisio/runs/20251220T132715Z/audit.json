@@ -1,0 +1,236 @@
+[
+  {
+    "event_type": "SESSION_INITIALIZED",
+    "payload": {
+      "ledger": {
+        "H_other": 0.2,
+        "llm-input-logging": 0.8
+      },
+      "roots": [
+        "llm-input-logging",
+        "H_other"
+      ]
+    }
+  },
+  {
+    "event_type": "OTHER_ABSORBER_ENFORCED",
+    "payload": {
+      "branch": "S<=1",
+      "sum_named": 0.8
+    }
+  },
+  {
+    "event_type": "INVARIANT_SUM_TO_ONE_CHECK",
+    "payload": {
+      "total": 1.0
+    }
+  },
+  {
+    "event_type": "FRONTIER_DEFINED",
+    "payload": {
+      "frontier": [
+        "llm-input-logging"
+      ],
+      "leader_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "ROOT_SCOPED",
+    "payload": {
+      "root_id": "llm-input-logging",
+      "slots": [
+        "feasibility",
+        "availability",
+        "fit_to_key_features",
+        "defeater_resistance"
+      ]
+    }
+  },
+  {
+    "event_type": "OP_EXECUTED",
+    "payload": {
+      "credits_after": 3,
+      "credits_before": 4,
+      "op_type": "DECOMPOSE",
+      "target_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "FRONTIER_DEFINED",
+    "payload": {
+      "frontier": [
+        "llm-input-logging"
+      ],
+      "leader_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "SLOT_DECOMPOSED",
+    "payload": {
+      "children": [],
+      "coupling": null,
+      "slot_node_key": "llm-input-logging:feasibility",
+      "type": "NONE"
+    }
+  },
+  {
+    "event_type": "OP_EXECUTED",
+    "payload": {
+      "credits_after": 2,
+      "credits_before": 3,
+      "op_type": "DECOMPOSE",
+      "target_id": "llm-input-logging:feasibility"
+    }
+  },
+  {
+    "event_type": "FRONTIER_DEFINED",
+    "payload": {
+      "frontier": [
+        "llm-input-logging"
+      ],
+      "leader_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "K_GUARDRAIL_APPLIED",
+    "payload": {
+      "k": 0.55,
+      "node_key": "llm-input-logging:feasibility"
+    }
+  },
+  {
+    "event_type": "NODE_EVALUATED",
+    "payload": {
+      "k": 0.55,
+      "node_key": "llm-input-logging:feasibility",
+      "p": 1.0
+    }
+  },
+  {
+    "event_type": "MULTIPLIER_COMPUTED",
+    "payload": {
+      "m": 1.0,
+      "root_id": "llm-input-logging",
+      "slot_p_values": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  {
+    "event_type": "P_PROP_COMPUTED",
+    "payload": {
+      "p_base": 0.8,
+      "p_prop": 0.8,
+      "root_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "DAMPING_APPLIED",
+    "payload": {
+      "alpha": 0.4,
+      "p_base": 0.8,
+      "p_new": 0.8,
+      "root_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "OTHER_ABSORBER_ENFORCED",
+    "payload": {
+      "branch": "S<=1",
+      "sum_named": 0.8
+    }
+  },
+  {
+    "event_type": "INVARIANT_SUM_TO_ONE_CHECK",
+    "payload": {
+      "total": 1.0
+    }
+  },
+  {
+    "event_type": "OP_EXECUTED",
+    "payload": {
+      "credits_after": 1,
+      "credits_before": 2,
+      "op_type": "EVALUATE",
+      "target_id": "llm-input-logging:feasibility"
+    }
+  },
+  {
+    "event_type": "FRONTIER_DEFINED",
+    "payload": {
+      "frontier": [
+        "llm-input-logging"
+      ],
+      "leader_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "NODE_EVALUATED",
+    "payload": {
+      "k": 0.75,
+      "node_key": "llm-input-logging:availability",
+      "p": 1.0
+    }
+  },
+  {
+    "event_type": "MULTIPLIER_COMPUTED",
+    "payload": {
+      "m": 1.0,
+      "root_id": "llm-input-logging",
+      "slot_p_values": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  {
+    "event_type": "P_PROP_COMPUTED",
+    "payload": {
+      "p_base": 0.8,
+      "p_prop": 0.8,
+      "root_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "DAMPING_APPLIED",
+    "payload": {
+      "alpha": 0.4,
+      "p_base": 0.8,
+      "p_new": 0.8,
+      "root_id": "llm-input-logging"
+    }
+  },
+  {
+    "event_type": "OTHER_ABSORBER_ENFORCED",
+    "payload": {
+      "branch": "S<=1",
+      "sum_named": 0.8
+    }
+  },
+  {
+    "event_type": "INVARIANT_SUM_TO_ONE_CHECK",
+    "payload": {
+      "total": 1.0
+    }
+  },
+  {
+    "event_type": "OP_EXECUTED",
+    "payload": {
+      "credits_after": 0,
+      "credits_before": 1,
+      "op_type": "EVALUATE",
+      "target_id": "llm-input-logging:availability"
+    }
+  },
+  {
+    "event_type": "STOP_REASON_RECORDED",
+    "payload": {
+      "stop_reason": "CREDITS_EXHAUSTED"
+    }
+  }
+]
