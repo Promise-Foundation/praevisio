@@ -28,12 +28,12 @@ jobs:
 
       - name: Run governance gate
         run: |
-          praevisio install --config-path .praevisio.yaml
           praevisio ci-gate \
+            fixtures/hello-world \
             --severity high \
             --fail-on-violation \
             --output logs/ci-gate-report.json \
-            --config .praevisio.yaml
+            --config fixtures/hello-world/.praevisio.yaml
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -42,4 +42,4 @@ jobs:
           name: praevisio-run
           path: |
             logs/ci-gate-report.json
-            .praevisio/runs/**
+            fixtures/hello-world/.praevisio/runs/**

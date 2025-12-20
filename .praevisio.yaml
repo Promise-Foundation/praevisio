@@ -1,14 +1,13 @@
 evaluation:
-  promise_id: llm-input-logging
-  threshold: 0.50
+  promise_id: example-promise
+  threshold: 0.95
   severity: high
-  pytest_targets:
-    - tests/test_logging.py
-  semgrep_rules_path: governance/evidence/semgrep_rules.yaml
+  pytest_targets: []
+  semgrep_rules_path: ""
   semgrep_callsite_rule_id: llm-call-site
   semgrep_violation_rule_id: llm-call-must-log
-  abductio_credits: 4
-  abductio_tau: 0.40
+  abductio_credits: 6
+  abductio_tau: 0.70
   abductio_epsilon: 0.05
   abductio_gamma: 0.20
   abductio_alpha: 0.40
@@ -21,5 +20,12 @@ evaluation:
       role: NEC
     - slot_key: defeater_resistance
       role: NEC
-  run_dir: .praevisio/runs
-hooks: []
+  run_dir: ".praevisio/runs"
+  thresholds:
+    high: 0.95
+hooks:
+  - id: example-lint
+    name: Example Lint
+    type: pre-commit
+    command: ["echo", "lint"]
+    patterns: ["**/*.py"]

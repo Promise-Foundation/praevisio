@@ -13,22 +13,22 @@ This repository follows Readme-Driven Development and an outside-in approach. Th
 pip install praevisio
 ```
 
-Create a config:
+Try the fixture demo:
+
+```bash
+praevisio ci-gate fixtures/hello-world \
+  --severity high \
+  --fail-on-violation \
+  --output logs/ci-gate-report.json \
+  --config fixtures/hello-world/.praevisio.yaml
+```
+
+This runs Praevisio against a governed “hello-world” project stored in `fixtures/hello-world/`.
+
+To scaffold your own repo, run:
 
 ```bash
 praevisio install --config-path .praevisio.yaml
-```
-
-Run an evaluation:
-
-```bash
-praevisio evaluate-commit . --config .praevisio.yaml --json
-```
-
-Run the CI gate:
-
-```bash
-praevisio ci-gate --config .praevisio.yaml --severity high --fail-on-violation
 ```
 
 ## CI quickstart
@@ -58,16 +58,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install praevisio
           npm install -g promptfoo
-      - name: Generate config if missing
-        run: |
-          praevisio install --config-path .praevisio.yaml
       - name: Run governance gate
         run: |
           praevisio ci-gate \
+            fixtures/hello-world \
             --severity high \
             --fail-on-violation \
             --output logs/ci-gate-report.json \
-            --config .praevisio.yaml
+            --config fixtures/hello-world/.praevisio.yaml
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -75,7 +73,7 @@ jobs:
           name: praevisio-run
           path: |
             logs/ci-gate-report.json
-            .praevisio/runs/**
+            fixtures/hello-world/.praevisio/runs/**
 ```
 
 ## .praevisio.yaml template

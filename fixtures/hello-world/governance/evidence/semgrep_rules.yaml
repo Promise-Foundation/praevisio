@@ -1,20 +1,18 @@
 rules:
   - id: llm-call-site
-    languages:
-      - python
+    languages: [python]
     message: LLM call site detected
     severity: INFO
     patterns:
       - pattern: call_llm($PROMPT)
 
   - id: llm-call-must-log
-    languages:
-      - python
-    message: LLM call detected without subsequent logging
+    languages: [python]
+    message: LLM call detected without prior logging
     severity: ERROR
     patterns:
       - pattern: call_llm($PROMPT)
       - pattern-not-inside: |
-          log($PROMPT)
+          log($PROMPT, $LOG_PATH)
           ...
           call_llm($PROMPT)

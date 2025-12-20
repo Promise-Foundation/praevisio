@@ -1,0 +1,13 @@
+id: llm-input-logging
+version: 0.1.0
+domain: /llm/logging
+statement: All LLM input prompts must be logged at the boundary.
+critical: true
+success_criteria:
+  credence_threshold: 0.95
+  evidence_types:
+    - direct_observational
+    - procedural
+parameters: {}
+stake:
+  credits: 0
