@@ -29,6 +29,19 @@ def step_git_workdir_without_hook(context) -> None:
     context.git_hooks_dir = git_hooks
     context.precommit_path = precommit
     context.runner = CliRunner()
+    config_path = Path(".praevisio.yaml")
+    config_path.write_text(
+        "\n".join([
+            "evaluation:",
+            "  promise_id: llm-input-logging",
+            "  threshold: 0.95",
+            "  pytest_targets: []",
+            "  semgrep_rules_path: governance/evidence/semgrep_rules.yaml",
+            "hooks: []",
+            "",
+        ]),
+        encoding="utf-8",
+    )
 
 
 @given('a critical logging promise "{promise_id}" with threshold 0.95')
@@ -64,22 +77,25 @@ def step_precommit_hook_invokes_praevisio(context) -> None:
 @given("the evaluation credence for critical promises will be {credence:f}")
 def step_mock_critical_evaluation(context, credence: float) -> None:
     context.mock_credence = credence
-    verdict = "green" if credence >= context.threshold else "red"
 
-    def fake_evaluate_commit(path: str) -> EvaluationResult:
-        return EvaluationResult(
-            credence=credence,
-            verdict=verdict,
-            details={
-                "is_critical": context.critical,
-                "threshold": context.threshold,
-                "test_passes": credence >= context.threshold,
-                "semgrep_coverage": 1.0,
-            },
-        )
+    class FakeEvaluationService:
+        def evaluate_path(self, path: str, *args, **kwargs) -> EvaluationResult:
+            config = kwargs.get("config")
+            threshold = getattr(config, "threshold", context.threshold)
+            verdict = "green" if credence >= threshold else "red"
+            return EvaluationResult(
+                credence=credence,
+                verdict=verdict,
+                details={
+                    "is_critical": context.critical,
+                    "threshold": threshold,
+                    "test_passes": credence >= threshold,
+                    "semgrep_coverage": 1.0,
+                },
+            )
 
-    context._original_evaluate_commit = getattr(cli_module, "evaluate_commit", None)
-    cli_module.evaluate_commit = fake_evaluate_commit
+    context._original_build_service = getattr(cli_module, "build_evaluation_service", None)
+    cli_module.build_evaluation_service = lambda: FakeEvaluationService()
 
 
 @when('I run "praevisio pre-commit"')
@@ -87,8 +103,8 @@ def step_run_precommit(context) -> None:
     result = context.runner.invoke(cli_module.app, ["pre-commit"])
     context.precommit_result = result
 
-    if getattr(context, "_original_evaluate_commit", None) is not None:
-        cli_module.evaluate_commit = context._original_evaluate_commit
+    if getattr(context, "_original_build_service", None) is not None:
+        cli_module.build_evaluation_service = context._original_build_service
 
     os.chdir(context.original_cwd)
     context.tmpdir.cleanup()

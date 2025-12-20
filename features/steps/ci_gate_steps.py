@@ -20,6 +20,22 @@ def step_high_severity_promise(context, promise_id: str) -> None:
     context.severity = "high"
     context.runner = CliRunner()
     context.report_path = Path("logs/ci-gate-report.json")
+    context.config_path = Path("logs/test-config.yaml")
+    context.config_path.parent.mkdir(parents=True, exist_ok=True)
+    context.config_path.write_text(
+        "\n".join([
+            "evaluation:",
+            f"  promise_id: {promise_id}",
+            "  threshold: 0.95",
+            "  thresholds:",
+            "    high: 0.95",
+            "  pytest_targets: []",
+            "  semgrep_rules_path: governance/evidence/semgrep_rules.yaml",
+            "hooks: []",
+            "",
+        ]),
+        encoding="utf-8",
+    )
 
 
 @given("the evaluation credence will be {credence:f}")
@@ -28,20 +44,23 @@ def step_mock_evaluate_commit(context, credence: float) -> None:
     Stub evaluate_commit so we can simulate credence without external tools.
     """
     context.credence = credence
-    verdict = "green" if credence >= context.threshold else "red"
 
-    def fake_evaluate_commit(path: str) -> EvaluationResult:
-        return EvaluationResult(
-            credence=credence,
-            verdict=verdict,
-            details={
-                "test_passes": credence >= context.threshold,
-                "semgrep_coverage": 1.0,
-            },
-        )
+    class FakeEvaluationService:
+        def evaluate_path(self, path: str, *args, **kwargs) -> EvaluationResult:
+            config = kwargs.get("config")
+            threshold = getattr(config, "threshold", context.threshold)
+            verdict = "green" if credence >= threshold else "red"
+            return EvaluationResult(
+                credence=credence,
+                verdict=verdict,
+                details={
+                    "test_passes": credence >= threshold,
+                    "semgrep_coverage": 1.0,
+                },
+            )
 
-    context._original_evaluate_commit = getattr(cli_module, "evaluate_commit", None)
-    cli_module.evaluate_commit = fake_evaluate_commit
+    context._original_build_service = getattr(cli_module, "build_evaluation_service", None)
+    cli_module.build_evaluation_service = lambda: FakeEvaluationService()
 
 
 @when('I run the CI gate for severity "high" with fail-on-violation enabled')
@@ -59,13 +78,15 @@ def step_run_ci_gate(context) -> None:
         "--fail-on-violation",
         "--output",
         str(context.report_path),
+        "--config",
+        str(context.config_path),
     ]
 
     result = context.runner.invoke(cli_module.app, args)
     context.cli_result = result
 
-    if getattr(context, "_original_evaluate_commit", None) is not None:
-        cli_module.evaluate_commit = context._original_evaluate_commit
+    if getattr(context, "_original_build_service", None) is not None:
+        cli_module.build_evaluation_service = context._original_build_service
 
 
 @then("the CI gate should pass")

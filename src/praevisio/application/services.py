@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 from typing import Iterable, List
-import os
-
-import pytest
 
 from ..domain.models import Promise
-from ..domain.ports import PromiseRepository, GitRepository, ProcessExecutor, StaticAnalyzer
+from ..domain.ports import PromiseRepository, GitRepository, ProcessExecutor, StaticAnalyzer, TestRunner
 from ..domain.config import Configuration
+from ..domain.evaluation_config import EvaluationConfig
 from ..domain.entities import HookResult, EvaluationResult
 from ..domain.services import HookSelectionService
 from ..domain.value_objects import ExitCode, HookType
-from ..infrastructure.static_analysis_semgrep import SemgrepStaticAnalyzer
+from .evaluation_service import EvaluationService
 
 
 class PromiseService:
@@ -75,73 +73,21 @@ class HookOrchestrationService:
 def evaluate_commit(
     path: str,
     analyzer: StaticAnalyzer | None = None,
+    test_runner: TestRunner | None = None,
+    threshold: float | None = None,
+    config: EvaluationConfig | None = None,
 ) -> EvaluationResult:
-    """
-    Evaluate whether a commit satisfies the llm-logging-complete promise.
-
-    Evidence sources:
-    1. Pytest run of app/tests/test_logging.py (procedural evidence).
-    2. SemgrepStaticAnalyzer over the given path (static_analysis evidence).
-
-    This implementation is intentionally simple and tutorial-friendly.
-    """
-
-    analyzer = analyzer or SemgrepStaticAnalyzer()
-
-    # --------------------
-    # 1) Procedural evidence (pytest)
-    # --------------------
-    original_cwd = os.getcwd()
-    try:
-        os.chdir(path)
-        # Run only the specific test file used in the tutorial
-        test_result_code = pytest.main(
-            ["app/tests/test_logging.py", "-q", "--disable-warnings"]
+    """Backwards-compatible wrapper over EvaluationService."""
+    service = EvaluationService(analyzer=analyzer, test_runner=test_runner)
+    if config is None:
+        config = EvaluationConfig()
+    if threshold is not None:
+        config = EvaluationConfig(
+            promise_id=config.promise_id,
+            threshold=threshold,
+            pytest_args=config.pytest_args,
+            pytest_targets=config.pytest_targets,
+            semgrep_rules_path=config.semgrep_rules_path,
+            thresholds=config.thresholds,
         )
-    finally:
-        os.chdir(original_cwd)
-
-    test_passes = (test_result_code == 0)
-
-    # --------------------
-    # 2) Static analysis evidence (Semgrep)
-    # --------------------
-    sa_result = analyzer.analyze(path)
-    coverage = sa_result.coverage
-    total_calls = sa_result.total_llm_calls
-    violations = sa_result.violations
-
-    # --------------------
-    # 3) Fuse evidence into credence
-    # --------------------
-    # Weighting scheme: tests 40%, Semgrep coverage 60%.
-    test_contribution = 0.4 if test_passes else 0.0
-    semgrep_contribution = 0.6 * coverage
-
-    credence = test_contribution + semgrep_contribution
-
-    # Modifier: failing tests cap credence
-    if not test_passes:
-        credence = min(credence, 0.70)
-
-    # Modifier: very low coverage penalized
-    if coverage < 0.85:
-        credence *= 0.90
-
-    # Modifier: if there are no LLM calls at all, treat as neutral success
-    if total_calls == 0:
-        credence = 0.80
-
-    verdict = "green" if credence >= 0.95 else "red"
-
-    details = {
-        "test_passes": test_passes,
-        "semgrep_coverage": coverage,
-        "total_llm_calls": total_calls,
-        "violations_found": violations,
-        "findings": [f.__dict__ for f in sa_result.findings],
-        "test_contribution": test_contribution,
-        "semgrep_contribution": semgrep_contribution,
-    }
-
-    return EvaluationResult(credence=credence, verdict=verdict, details=details)
+    return service.evaluate_path(path, config=config)

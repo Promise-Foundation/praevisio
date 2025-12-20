@@ -7,23 +7,32 @@ available commands.
 """
 
 import json
-import sys
 import stat
 from pathlib import Path
+from typing import Optional
 import typer
 
-from ..application.configuration_service import ConfigurationService
+from ..application.evaluation_service import EvaluationService
 from ..application.installation_service import InstallationService
-from ..application.services import HookOrchestrationService, evaluate_commit
-from ..application.validation_service import ValidationService
-from ..domain.value_objects import HookType
+from ..domain.evaluation_config import EvaluationConfig
 from ..infrastructure.config import YamlConfigLoader
 from ..infrastructure.filesystem import LocalFileSystemService
-from ..infrastructure.git import InMemoryGitRepository
-from ..infrastructure.process import RecordingProcessExecutor
 
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
+
+
+def build_evaluation_service() -> EvaluationService:
+    return EvaluationService()
+
+
+def load_configuration(path: str):
+    loader = YamlConfigLoader()
+    try:
+        return loader.load(path)
+    except FileNotFoundError:
+        typer.echo(f"[praevisio] Config not found: {path}")
+        raise typer.Exit(code=2)
 
 
 @app.command()
@@ -37,13 +46,29 @@ def install(config_path: str = ".praevisio.yaml") -> None:
 @app.command("pre-commit")
 def pre_commit(
     path: str = typer.Argument(".", help="Path to the repository/commit to evaluate."),
-    threshold: float = typer.Option(
-        0.95, "--threshold", help="Credence threshold required to pass the pre-commit gate."
+    threshold: Optional[float] = typer.Option(
+        None, "--threshold", help="Credence threshold required to pass the pre-commit gate."
+    ),
+    config_path: str = typer.Option(
+        ".praevisio.yaml", "--config", help="Path to Praevisio configuration file."
     ),
 ) -> None:
     """Local governance gate to block commits when credence is below threshold."""
-    result = evaluate_commit(path)
-    if result.credence < threshold:
+    service = build_evaluation_service()
+    config = load_configuration(config_path)
+    evaluation = config.evaluation
+    effective_threshold = threshold if threshold is not None else evaluation.threshold
+    evaluation = EvaluationConfig(
+        promise_id=evaluation.promise_id,
+        threshold=effective_threshold,
+        pytest_args=evaluation.pytest_args,
+        pytest_targets=evaluation.pytest_targets,
+        semgrep_rules_path=evaluation.semgrep_rules_path,
+        thresholds=evaluation.thresholds,
+    )
+    result = service.evaluate_path(path, config=evaluation)
+    applicable = result.details.get("applicable", True)
+    if applicable and (result.credence or 0.0) < evaluation.threshold:
         typer.echo("[praevisio][pre-commit] ❌ Critical promises not satisfied. Commit aborted.")
         raise typer.Exit(code=1)
     typer.echo("[praevisio][pre-commit] ✅ All critical promises satisfied.")
@@ -58,9 +83,27 @@ def evaluate_commit_cmd(
         "--json",
         help="Print structured JSON output instead of plain text.",
     ),
+    threshold: Optional[float] = typer.Option(
+        None, "--threshold", help="Credence threshold required to pass the evaluation."
+    ),
+    config_path: str = typer.Option(
+        ".praevisio.yaml", "--config", help="Path to Praevisio configuration file."
+    ),
 ) -> None:
     """Evaluate a single commit directory and print credence and verdict."""
-    result = evaluate_commit(path)
+    service = build_evaluation_service()
+    config = load_configuration(config_path)
+    evaluation = config.evaluation
+    effective_threshold = threshold if threshold is not None else evaluation.threshold
+    evaluation = EvaluationConfig(
+        promise_id=evaluation.promise_id,
+        threshold=effective_threshold,
+        pytest_args=evaluation.pytest_args,
+        pytest_targets=evaluation.pytest_targets,
+        semgrep_rules_path=evaluation.semgrep_rules_path,
+        thresholds=evaluation.thresholds,
+    )
+    result = service.evaluate_path(path, config=evaluation)
     if json_output:
         typer.echo(json.dumps({
             "credence": result.credence,
@@ -68,7 +111,8 @@ def evaluate_commit_cmd(
             "details": result.details,
         }, indent=2))
     else:
-        typer.echo(f"Credence: {result.credence:.3f}")
+        credence_display = "n/a" if result.credence is None else f"{result.credence:.3f}"
+        typer.echo(f"Credence: {credence_display}")
         typer.echo(f"Verdict: {result.verdict}")
 
 
@@ -84,19 +128,41 @@ def ci_gate(
         "--output",
         help="Where to write JSON report of evaluated promises.",
     ),
-    threshold: float = typer.Option(
-        0.95, "--threshold", help="Credence threshold for passing high-severity promises."
+    threshold: Optional[float] = typer.Option(
+        None, "--threshold", help="Credence threshold for passing high-severity promises."
+    ),
+    config_path: str = typer.Option(
+        ".praevisio.yaml", "--config", help="Path to Praevisio configuration file."
     ),
 ) -> None:
     """Run Praevisio as a CI governance gate."""
-    result = evaluate_commit(path)
+    service = build_evaluation_service()
+    config = load_configuration(config_path)
+    evaluation = config.evaluation
+    severity_threshold = evaluation.thresholds.get(severity)
+    if threshold is not None:
+        effective_threshold = threshold
+    elif severity_threshold is not None:
+        effective_threshold = severity_threshold
+    else:
+        effective_threshold = evaluation.threshold
+    evaluation = EvaluationConfig(
+        promise_id=evaluation.promise_id,
+        threshold=effective_threshold,
+        pytest_args=evaluation.pytest_args,
+        pytest_targets=evaluation.pytest_targets,
+        semgrep_rules_path=evaluation.semgrep_rules_path,
+        thresholds=evaluation.thresholds,
+    )
+    result = service.evaluate_path(path, config=evaluation)
 
     report_entry = {
-        "id": "llm-input-logging",
+        "id": evaluation.promise_id,
         "credence": result.credence,
         "verdict": result.verdict,
-        "threshold": threshold,
+        "threshold": evaluation.threshold,
         "severity": severity,
+        "applicable": result.details.get("applicable", True),
     }
     report = [report_entry]
 
@@ -104,10 +170,17 @@ def ci_gate(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
-    should_fail = fail_on_violation and any(r["credence"] < r["threshold"] for r in report)
+    should_fail = False
+    if fail_on_violation:
+        for entry in report:
+            applicable = entry.get("applicable", True)
+            credence = entry.get("credence")
+            if applicable and credence is not None and credence < entry["threshold"]:
+                should_fail = True
+                break
     if should_fail:
         typer.echo("[praevisio][ci-gate] ❌ GATE FAILED")
-        sys.exit(1)
+        raise typer.Exit(code=1)
 
     typer.echo("[praevisio][ci-gate] ✅ GATE PASSED")
 

@@ -8,6 +8,7 @@ except Exception:  # pragma: no cover - optional at runtime
     yaml = None
 
 from ..domain.config import Configuration
+from ..domain.evaluation_config import EvaluationConfig
 from ..domain.entities import Hook
 from ..domain.ports import ConfigLoader
 from ..domain.value_objects import HookType, FilePattern
@@ -30,6 +31,19 @@ class YamlConfigLoader(ConfigLoader):
             raise RuntimeError("PyYAML is required to load YAML configuration")
         with open(path, "r", encoding="utf-8") as f:
             raw = yaml.safe_load(f) or {}
+        evaluation_raw = raw.get("evaluation", {}) or {}
+        defaults = EvaluationConfig()
+        thresholds = evaluation_raw.get("thresholds", {}) or {}
+        evaluation = EvaluationConfig(
+            promise_id=evaluation_raw.get("promise_id", defaults.promise_id),
+            threshold=float(evaluation_raw.get("threshold", defaults.threshold)),
+            pytest_args=list(evaluation_raw.get("pytest_args", defaults.pytest_args)),
+            pytest_targets=list(evaluation_raw.get("pytest_targets", defaults.pytest_targets)),
+            semgrep_rules_path=str(
+                evaluation_raw.get("semgrep_rules_path", defaults.semgrep_rules_path)
+            ),
+            thresholds={k: float(v) for k, v in thresholds.items()},
+        )
         hooks = []
         for item in raw.get("hooks", []) or []:
             patterns = [FilePattern(p) for p in item.get("patterns", []) or []]
@@ -45,4 +59,4 @@ class YamlConfigLoader(ConfigLoader):
                 file_scoped=bool(item.get("file_scoped", True)),
             )
             hooks.append(hook)
-        return Configuration(hooks=hooks)
+        return Configuration(hooks=hooks, evaluation=evaluation)

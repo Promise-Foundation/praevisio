@@ -40,7 +40,7 @@ class CommitContext:
 
 @dataclass(frozen=True)
 class EvaluationResult:
-    credence: float
+    credence: float | None
     verdict: str
     details: Dict[str, Any] = field(default_factory=dict)
 

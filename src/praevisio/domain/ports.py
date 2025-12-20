@@ -68,3 +68,11 @@ class StaticAnalyzer(ABC):
     def analyze(self, path: str) -> StaticAnalysisResult:  # pragma: no cover - interface
         """Analyze code under `path` and return a structured result."""
         raise NotImplementedError
+
+
+class TestRunner(ABC):
+    """Port for running tests in a target repository."""
+
+    @abstractmethod
+    def run(self, path: str, args: Iterable[str]) -> int:  # pragma: no cover - interface
+        raise NotImplementedError

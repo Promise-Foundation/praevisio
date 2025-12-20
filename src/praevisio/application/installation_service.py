@@ -4,6 +4,13 @@ from ..domain.ports import FileSystemService
 
 
 DEFAULT_CONFIG = """
+evaluation:
+  promise_id: example-promise
+  threshold: 0.95
+  pytest_targets: []
+  semgrep_rules_path: governance/evidence/semgrep_rules.yaml
+  thresholds:
+    high: 0.95
 hooks:
   - id: example-lint
     name: Example Lint
