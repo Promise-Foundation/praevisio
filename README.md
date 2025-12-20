@@ -16,7 +16,7 @@ pip install praevisio
 Create a config:
 
 ```bash
-praevisio install --config .praevisio.yaml
+praevisio install --config-path .praevisio.yaml
 ```
 
 Run an evaluation:
@@ -60,7 +60,7 @@ jobs:
           npm install -g promptfoo
       - name: Generate config if missing
         run: |
-          praevisio install --config .praevisio.yaml
+          praevisio install --config-path .praevisio.yaml
       - name: Run governance gate
         run: |
           praevisio ci-gate \

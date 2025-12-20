@@ -28,7 +28,7 @@ jobs:
 
       - name: Run governance gate
         run: |
-          praevisio install --config .praevisio.yaml
+          praevisio install --config-path .praevisio.yaml
           praevisio ci-gate \
             --severity high \
             --fail-on-violation \
