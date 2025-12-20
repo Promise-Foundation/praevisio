@@ -1,11 +1,67 @@
 # praevisio
 
-A CLI tool for AI governance through verifiable promises.
+**AI governance through verifiable promises** — a Python CLI that turns governance requirements into repeatable checks, CI gates, and replayable audit artifacts.
 
-This repository follows Readme-Driven Development and an outside-in approach. The white paper is the source of truth for behavior and outcomes we intend to deliver; we implement from the boundary inward until the tool matches the spec.
+Praevisio evaluates a **promise** (a claim about your system) using deterministic **evidence** (today: `pytest` + `semgrep`), computes **credence** via ABDUCTIO, and emits an **audit trail** you can replay.
 
-- White paper: docs/white-paper.md (rendered by Sphinx)
-- Built docs entry point: docs/index.md
+- White paper (source of truth): `docs/white-paper.md` (rendered by Sphinx)
+- Tutorials (learn‑by‑doing): `docs/tutorials/`
+- Sandbox / governed repo to experiment with: https://github.com/Promise-Foundation/praevisio-lab
+
+---
+
+## Choose your path
+
+- **Developer (Tier 1):** “Will this commit be blocked, and what do I fix?”
+  - Start with: Tutorials 1–3 (`docs/tutorials/01-logging-basics.md`, `02-static-analysis.md`, `03-branch-policy.md`)
+- **Governance engineer / compliance (Tier 2):** “What promise are we enforcing, and what evidence supports it?”
+  - Focus: promise files + `.praevisio.yaml` + CI artifacts (`.praevisio/runs/**`)
+- **Power user / auditor (Tier 3):** “Can I replay the decision later and inspect integrity?”
+  - Focus: `audit.json`, `manifest.json`, `praevisio replay-audit`
+
+---
+
+## What is a “verifiable promise”?
+
+A **promise** is a machine‑checkable claim defined in your repo:
+
+- `governance/promises/<promise_id>.yaml`
+
+Praevisio evaluates that promise by collecting evidence and producing artifacts:
+
+```
+repo/
+├─ governance/promises/<promise_id>.yaml     # the claim
+├─ tests/                                   # procedural evidence (pytest)
+├─ governance/evidence/semgrep_rules.yaml   # observational evidence (semgrep)
+└─ .praevisio/runs/<run_id>/                 # audit bundle (generated)
+   ├─ evidence/pytest.json
+   ├─ evidence/semgrep.json
+   ├─ audit.json
+   └─ manifest.json                         # artifacts + SHA-256 hashes + metadata
+```
+
+Key terms:
+
+- **Evidence:** artifacts produced by deterministic tools (pytest + semgrep today).
+- **Credence:** probability‑like support that the promise holds given evidence.
+- **Audit:** replayable trace of how credence was computed.
+- **Manifest:** inventory of artifacts with SHA‑256 hashes for integrity review.
+- **Gate:** a policy decision (pass/fail) based on credence + thresholds.
+
+---
+
+## Requirements (current release)
+
+Praevisio is repo‑local: it runs against *your governed repository* and shells out to tools there.
+
+- Python (recommended: 3.11+)
+- `pytest` available in the governed repo (if you set `pytest_targets`)
+- `semgrep` CLI available on `PATH` (if you set `semgrep_rules_path`)
+
+Tutorials 4+ use optional tooling (e.g., Promptfoo) **inside pytest**. Those are not base requirements; they’re tutorial‑specific patterns.
+
+---
 
 ## Install (PyPI)
 
@@ -13,27 +69,57 @@ This repository follows Readme-Driven Development and an outside-in approach. Th
 pip install praevisio
 ```
 
-Try the fixture demo:
+Verify:
 
 ```bash
-praevisio ci-gate fixtures/hello-world \
-  --severity high \
-  --fail-on-violation \
-  --output logs/ci-gate-report.json \
-  --config fixtures/hello-world/.praevisio.yaml
+praevisio version
 ```
 
-This runs Praevisio against a governed “hello-world” project stored in `fixtures/hello-world/`.
+---
 
-To scaffold your own repo, run:
+## 10‑minute quickstart (use the sandbox repo)
+
+If you want a ready‑made governed repository, use:
+https://github.com/Promise-Foundation/praevisio-lab
+
+Typical flow inside a governed repo:
+
+1) Add a promise file: `governance/promises/<id>.yaml`  
+2) Add evidence: tests + (optionally) Semgrep rules  
+3) Add config: `.praevisio.yaml`  
+4) Run:
+
+```bash
+praevisio evaluate-commit . --config .praevisio.yaml --json
+```
+
+You’ll get:
+
+- credence + verdict
+- artifact paths for `audit.json` and `manifest.json`
+- evidence summaries and stable references (`pytest:sha256:…`, `semgrep:sha256:…`)
+
+---
+
+## Quickstart: scaffold config
+
+Create a default `.praevisio.yaml`:
 
 ```bash
 praevisio install --config-path .praevisio.yaml
 ```
 
-## CI quickstart
+This writes a starter configuration you can customize.
 
-Example GitHub Actions workflow:
+---
+
+## CI quickstart (GitHub Actions)
+
+This is a minimal CI gate that:
+
+- runs Praevisio
+- writes a JSON report
+- uploads audit artifacts for review
 
 ```yaml
 name: Praevisio Governance Gate
@@ -50,22 +136,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
+
+      # If you use Semgrep evidence, ensure Semgrep is installed on the runner.
+      # - run: pip install semgrep
+
+      - name: Install Praevisio
         run: |
           python -m pip install --upgrade pip
           pip install praevisio
-          npm install -g promptfoo
+
       - name: Run governance gate
         run: |
-          praevisio ci-gate \
-            fixtures/hello-world \
+          praevisio ci-gate . \
             --severity high \
             --fail-on-violation \
             --output logs/ci-gate-report.json \
-            --config fixtures/hello-world/.praevisio.yaml
+            --config .praevisio.yaml
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         if: always()
@@ -73,177 +160,236 @@ jobs:
           name: praevisio-run
           path: |
             logs/ci-gate-report.json
-            fixtures/hello-world/.praevisio/runs/**
+            .praevisio/runs/**
 ```
 
-## .praevisio.yaml template
+---
+
+## What the CI report contains
+
+`logs/ci-gate-report.json` contains (at minimum):
+
+- promise id, credence, verdict
+- threshold + severity
+- artifact paths + hashes (audit + manifest)
+
+This is designed so reviewers can:
+
+- inspect evidence artifacts
+- replay the audit deterministically
+
+---
+
+## Local workflows
+
+Evaluate a repo (JSON output):
+
+```bash
+praevisio evaluate-commit . --config .praevisio.yaml --json
+```
+
+Replay the most recent audit:
+
+```bash
+praevisio replay-audit --latest --json
+```
+
+Show a stored run (manifest + artifacts):
+
+```bash
+praevisio show-run <run_id> --runs-dir .praevisio/runs
+```
+
+Install a pre‑commit gate:
+
+```bash
+praevisio install-hooks
+```
+
+This writes `.git/hooks/pre-commit` to invoke `praevisio pre-commit`.
+
+---
+
+## Configuration: .praevisio.yaml
+
+The configuration binds a promise to evidence sources and gate policy.
+
+Minimal example:
 
 ```yaml
 evaluation:
   promise_id: llm-input-logging
   threshold: 0.95
   severity: high
-  thresholds:
-    high: 0.95
-    medium: 0.90
+
   pytest_targets:
     - tests/test_logging.py
+
   semgrep_rules_path: governance/evidence/semgrep_rules.yaml
   semgrep_callsite_rule_id: llm-call-site
   semgrep_violation_rule_id: llm-call-must-log
+
   run_dir: .praevisio/runs
+
+  thresholds:
+    high: 0.95
+    medium: 0.90
+
 hooks: []
 ```
 
-## Quickstart (uv)
+Notes:
 
-0) Install uv (see https://docs.astral.sh/uv/)
+- Severity selects the threshold from `evaluation.thresholds[severity]` when present.
+- If `pytest_targets` is empty, tests are considered skipped and credence is penalized (see Tutorial 1).
+- If Semgrep is configured but the rules file is missing or invalid, evaluation can return error.
 
-1) Create a virtual environment and install dependencies
+---
 
-- uv venv
-- uv sync --all-groups  # installs docs dependencies too
+## Promise files: governance/promises/*.yaml
 
-2) Build the docs
+Example:
 
-- uv run sphinx-build -b html docs docs/_build/html
-- Open docs/_build/html/index.html in your browser
+```yaml
+id: llm-input-logging
+version: 0.1.0
+domain: /llm/observability
+statement: All LLM API calls must log input prompts.
+critical: true
+success_criteria:
+  credence_threshold: 0.95
+  evidence_types:
+    - procedural
+    - pattern
+parameters: {}
+stake:
+  credits: 0
+```
 
-## Alternative (pip/venv)
+Conventions:
 
-1) Create and activate a virtual environment
+- The promise describes what must be true.
+- Thresholds / severity belong in `.praevisio.yaml` (policy), not in promise YAML.
 
-- macOS/Linux
-  - python3 -m venv .venv
-  - source .venv/bin/activate
-- Windows (PowerShell)
-  - py -3 -m venv .venv
-  - .venv\Scripts\Activate.ps1
+---
 
-2) Install dependencies
+## Evidence and audit artifacts
 
-- pip install -e .
+Each run produces a directory under `.praevisio/runs/<run_id>/` with:
 
-3) Build the docs
+- `evidence/pytest.json` — pytest targets, args, exit code, errors
+- `evidence/semgrep.json` — rule ids, coverage metrics, violations, findings
+- `audit.json` — ABDUCTIO audit trace for deterministic replay
+- `manifest.json` — artifacts + SHA‑256 hashes + run metadata (versions, UTC timestamp, ABDUCTIO config)
 
-- make -C docs html
-- Open docs/_build/html/index.html in your browser
+These artifacts are intended to be uploaded from CI and reviewed like any other governance record.
 
-## Build and publish (uv)
+---
 
-- Build artifacts (sdist/wheel):
-  - uv build
-- Publish to PyPI (requires a token):
-  - uv publish --token $PYPI_API_TOKEN
+## Security & data handling
 
-## Architecture overview
+Praevisio writes governance artifacts to disk. Treat them as audit records.
 
-Layers
-- Domain (src/praevisio/domain): Core concepts and rules
-  - Entities: EvaluationResult, StaticAnalysisResult, CommitContext
-  - Value Objects: HookType, ExitCode, FilePattern
-  - Ports: StaticAnalyzer, TestRunner, ConfigLoader, PromiseLoader
-- Application (src/praevisio/application): Use cases/orchestration
-  - EvaluationService: evidence collection + ABDUCTIO evaluation
-  - PraevisioEngine: orchestration and gating
-  - InstallationService: write a default .praevisio.yaml
-  - services.py: compatibility re-exports for older imports
-- Infrastructure (src/praevisio/infrastructure): Adapters to ports
-  - SemgrepStaticAnalyzer, SubprocessPytestRunner, YamlConfigLoader, YamlPromiseLoader
-  - EvidenceStore for audit artifacts
-- Presentation (src/praevisio/presentation): CLI
-  - Typer-based CLI (praevisio). Commands map to application services
+Do not store secrets in `.praevisio.yaml` or promise YAML files.
 
-Configuration as a domain concept
-- Canonical file: .praevisio.yaml
-- Example:
+Evidence artifacts may include:
 
-  evaluation:
-    promise_id: llm-input-logging
-    threshold: 0.95
-    pytest_targets:
-      - tests/test_logging.py
-    semgrep_rules_path: governance/evidence/semgrep_rules.yaml
-    semgrep_callsite_rule_id: llm-call-site
-    semgrep_violation_rule_id: llm-call-must-log
-  hooks: []
+- file paths, rule ids, and snippets depending on tool output (e.g., Semgrep findings)
+- test metadata and errors
 
-Error handling
-- Configuration errors are surfaced by the CLI with non-zero exit codes.
-- Evaluation errors surface in the JSON output under `details.promise_error` or tool-specific error fields.
+If your organization logs prompts as part of governance:
 
-Dependency injection
-- Application services accept ports via constructor injection for easy testing and swapping infrastructure adapters.
+- redact before writing, and keep raw prompts out of CI artifacts unless explicitly approved
 
-## BDD with Behave
+Praevisio provides tamper‑evidence (hashes in a manifest), not hardware‑backed attestation.
 
-- Install dev dependencies (includes behave):
-  - uv sync --group dev  # or uv sync --all-groups
-- Run the feature tests:
-  - uv run behave -f progress
+---
 
-Example feature implemented
-- Run pre-commit hooks: Skip hooks when no files match pattern
-  - Given a repository with staged Python files (only .py)
-  - And a hook configured for "*.js"
-  - When I run pre-commit hooks
-  - Then the hook should be skipped
+## Tutorials (canonical learning path)
 
-Architecture notes:
-- The project uses a layered architecture:
-  - domain: core business objects and abstractions (no infra/presentation deps)
-  - application: orchestrates use cases via domain and ports
-  - infrastructure: adapter implementations (e.g., repositories)
-  - presentation: CLI/HTTP adapters (to be added)
-- Application services return domain objects or simple data structures, keeping them reusable across interfaces.
+All tutorials live under `docs/tutorials/`:
 
-CLI entry point
-- praevisio (Typer-based):
-  - praevisio install --config .praevisio.yaml
-  - praevisio evaluate-commit . --config .praevisio.yaml --json
-  - praevisio ci-gate --config .praevisio.yaml --severity high --fail-on-violation
-  - praevisio replay-audit --latest
-  - python -m praevisio
+- Logging & credence (ABDUCTIO) — end‑to‑end evaluation + replay
+- Static analysis that scales — Semgrep coverage/violations as evidence
+- CI gate & branch policy — enforce thresholds in CI + artifact upload
+- Red‑teaming via pytest — run tools (Promptfoo) inside pytest, gate on policy
+- Prompt injection defenses — enforce boundary wiring + effectiveness in tests
+- Privacy protection — PII redaction tests and gating
+- Third‑party risk — enforce approvals/expiry via repo‑local registry + tests
 
+If you want a guided sandbox, start with:
+https://github.com/Promise-Foundation/praevisio-lab
 
-## Development approach
+---
 
-- Readme-Driven Development: We capture intent and interfaces up front in this README and the white paper. We will keep both current as we iterate.
-- Outside-in: We will define user-visible CLI behavior first, then drive implementation via tests and thin slices until the internals satisfy the external contracts.
-- Documentation-first: Sphinx is set up from day one; every significant change should be reflected in the docs.
+## Architecture (short)
 
-## Documentation system
+Praevisio is layered:
 
-- Sphinx with MyST Markdown allows us to keep the white paper in Markdown while using Sphinx features.
-- Theme: sphinx_rtd_theme
-- Extensions enabled for future self-documentation work:
-  - autodoc and napoleon (for API docs from docstrings)
-  - viewcode (source links)
-  - todo (TODO directives can be toggled in output)
-  - autosectionlabel (stable xrefs)
-  - intersphinx (cross-project linking)
+- Domain: core concepts (Promise, EvaluationResult, ports)
+- Application: orchestration (evaluation + gates)
+- Infrastructure: adapters (Semgrep, subprocess pytest, YAML loaders, evidence store)
+- Presentation: Typer CLI (praevisio)
 
-Structure:
-- docs/index.md: Site landing page and ToC
-- docs/white-paper.md: Includes the white_paper.md via Sphinx include
-- white_paper.md: Your authored white paper at the repo root
+The CLI is intentionally thin: commands map to application services so the engine can be embedded later.
 
-Build commands:
-- make -C docs html
-- Or directly: sphinx-build -b html docs docs/_build/html
+---
 
-## Next steps (planned)
+## Development
 
-- Multi-promise evaluation and per-promise gating
-- Collector plugins beyond pytest/semgrep
+### Quickstart (uv)
+
+Install uv: https://docs.astral.sh/uv/
+
+Create venv + install dependencies:
+
+```bash
+uv venv
+uv sync --all-groups
+```
+
+Build docs:
+
+```bash
+uv run sphinx-build -b html docs docs/_build/html
+```
+
+Open `docs/_build/html/index.html`.
+
+### Alternative (pip/venv)
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+make -C docs html
+```
+
+### BDD (Behave)
+
+```bash
+uv sync --group dev
+uv run behave -f progress
+```
+
+---
+
+## Roadmap (planned)
+
+- Multi‑promise evaluation and per‑promise gating
+- Collector plugins beyond pytest/semgrep (structured evidence ingestion)
 - Calibrated evidence weighting and tuning guides
+- Stronger integrity primitives (signing / provenance bindings)
+
+---
 
 ## Contributing
 
-- Keep changes small and focused on an outcome.
-- Update docs alongside code changes. If an interface changes, update examples in the README and white paper sections that reference it.
+- Keep changes small and outcome‑focused.
+- Update docs alongside code changes.
 - Prefer tests that exercise the CLI surface area.
+
+---
 
 ## License
 
-- TBD by the repository owner. No license is included yet.
+TBD by the repository owner.
