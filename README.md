@@ -7,6 +7,96 @@ This repository follows Readme-Driven Development and an outside-in approach. Th
 - White paper: docs/white-paper.md (rendered by Sphinx)
 - Built docs entry point: docs/index.md
 
+## Install (PyPI)
+
+```bash
+pip install praevisio
+```
+
+Create a config:
+
+```bash
+praevisio install --config .praevisio.yaml
+```
+
+Run an evaluation:
+
+```bash
+praevisio evaluate-commit . --config .praevisio.yaml --json
+```
+
+Run the CI gate:
+
+```bash
+praevisio ci-gate --config .praevisio.yaml --severity high --fail-on-violation
+```
+
+## CI quickstart
+
+Example GitHub Actions workflow:
+
+```yaml
+name: Praevisio Governance Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  governance-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install praevisio
+          npm install -g promptfoo
+      - name: Generate config if missing
+        run: |
+          praevisio install --config .praevisio.yaml
+      - name: Run governance gate
+        run: |
+          praevisio ci-gate \
+            --severity high \
+            --fail-on-violation \
+            --output logs/ci-gate-report.json \
+            --config .praevisio.yaml
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: praevisio-run
+          path: |
+            logs/ci-gate-report.json
+            .praevisio/runs/**
+```
+
+## .praevisio.yaml template
+
+```yaml
+evaluation:
+  promise_id: llm-input-logging
+  threshold: 0.95
+  severity: high
+  thresholds:
+    high: 0.95
+    medium: 0.90
+  pytest_targets:
+    - tests/test_logging.py
+  semgrep_rules_path: governance/evidence/semgrep_rules.yaml
+  semgrep_callsite_rule_id: llm-call-site
+  semgrep_violation_rule_id: llm-call-must-log
+  run_dir: .praevisio/runs
+hooks: []
+```
+
 ## Quickstart (uv)
 
 0) Install uv (see https://docs.astral.sh/uv/)
@@ -32,9 +122,9 @@ This repository follows Readme-Driven Development and an outside-in approach. Th
   - py -3 -m venv .venv
   - .venv\Scripts\Activate.ps1
 
-2) Install documentation dependencies
+2) Install dependencies
 
-- pip install -r requirements.txt
+- pip install -e .
 
 3) Build the docs
 
@@ -52,40 +142,37 @@ This repository follows Readme-Driven Development and an outside-in approach. Th
 
 Layers
 - Domain (src/praevisio/domain): Core concepts and rules
-  - Entities: Hook, HookResult, ValidationRule, CommitContext
+  - Entities: EvaluationResult, StaticAnalysisResult, CommitContext
   - Value Objects: HookType, ExitCode, FilePattern
-  - Services: HookSelectionService (type filtering, dependency ordering, file pattern matching)
-  - Ports: PromiseRepository, GitRepository, ProcessExecutor, FileSystemService, ConfigLoader
+  - Ports: StaticAnalyzer, TestRunner, ConfigLoader, PromiseLoader
 - Application (src/praevisio/application): Use cases/orchestration
-  - HookOrchestrationService (hook_service.py): run hooks of a given HookType in correct order
-  - PromiseService (promise_service.py): register and persist promises
-  - ConfigurationService: load .praevisio.yaml into domain Configuration
+  - EvaluationService: evidence collection + ABDUCTIO evaluation
+  - PraevisioEngine: orchestration and gating
   - InstallationService: write a default .praevisio.yaml
-  - ValidationService: validate configuration & hook definitions
   - services.py: compatibility re-exports for older imports
 - Infrastructure (src/praevisio/infrastructure): Adapters to ports
-  - git.py (InMemoryGitRepository), process.py (RecordingProcessExecutor), filesystem.py (LocalFileSystemService), config.py (YamlConfigLoader, InMemoryConfigLoader)
-  - Planned: ApiClient adapter(s)
-- Presentation (src/praevisio/presentation): CLI and other interfaces
+  - SemgrepStaticAnalyzer, SubprocessPytestRunner, YamlConfigLoader, YamlPromiseLoader
+  - EvidenceStore for audit artifacts
+- Presentation (src/praevisio/presentation): CLI
   - Typer-based CLI (praevisio). Commands map to application services
 
 Configuration as a domain concept
 - Canonical file: .praevisio.yaml
 - Example:
 
-  hooks:
-    - id: example-lint
-      name: Example Lint
-      type: pre-commit
-      command: ["echo", "lint"]
-      patterns: ["**/*.py"]
-      depends_on: []
-      enabled: true
-      file_scoped: true
+  evaluation:
+    promise_id: llm-input-logging
+    threshold: 0.95
+    pytest_targets:
+      - tests/test_logging.py
+    semgrep_rules_path: governance/evidence/semgrep_rules.yaml
+    semgrep_callsite_rule_id: llm-call-site
+    semgrep_violation_rule_id: llm-call-must-log
+  hooks: []
 
 Error handling
-- ConfigurationInvalidException thrown by ValidationService
-- Hook results carry ExitCode; future HookFailedException can be added for richer flow control
+- Configuration errors are surfaced by the CLI with non-zero exit codes.
+- Evaluation errors surface in the JSON output under `details.promise_error` or tool-specific error fields.
 
 Dependency injection
 - Application services accept ports via constructor injection for easy testing and swapping infrastructure adapters.
@@ -114,20 +201,11 @@ Architecture notes:
 
 CLI entry point
 - praevisio (Typer-based):
-  - uv run praevisio install        # writes a default .praevisio.yaml
-  - uv run praevisio pre-commit     # loads config, validates, runs pre-commit hooks
-  - uv run praevisio evaluate-commit path/to/commit  # MVP evaluation (credence + verdict)
-  - python -m praevisio             # equivalent entry point
-
-Outside-in MVP flow with a separate lab repo (praevisio-test)
-- In praevisio/: install as editable so the CLI and module are available to the lab
-  - pip install -e .
-- In praevisio-test/: write Behave tests that call the CLI, e.g.:
-  - praevisio evaluate-commit commits/compliant/c1
-- Minimal evaluation implemented:
-  - Reads app/src/llm_client.py in the commit directory
-  - If it contains a log(...) call → Credence 0.97 → Verdict green
-  - Otherwise → Credence 0.42 → Verdict red
+  - praevisio install --config .praevisio.yaml
+  - praevisio evaluate-commit . --config .praevisio.yaml --json
+  - praevisio ci-gate --config .praevisio.yaml --severity high --fail-on-violation
+  - praevisio replay-audit --latest
+  - python -m praevisio
 
 
 ## Development approach
@@ -158,10 +236,9 @@ Build commands:
 
 ## Next steps (planned)
 
-- Project skeleton for the CLI (src/ layout, package metadata)
-- Test harness and initial outside-in tests for first CLI story
-- Self-documenting code via autodoc, with API docs published in docs/
-- Continuous docs build (Read the Docs or CI job)
+- Multi-promise evaluation and per-promise gating
+- Collector plugins beyond pytest/semgrep
+- Calibrated evidence weighting and tuning guides
 
 ## Contributing
 
