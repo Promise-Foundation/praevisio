@@ -6,6 +6,15 @@ from pathlib import Path
 from praevisio.application.evaluation_service import EvaluationService
 from praevisio.domain.entities import StaticAnalysisResult
 from praevisio.domain.evaluation_config import EvaluationConfig
+from praevisio.domain.models import Promise
+
+
+@dataclass
+class FakePromiseLoader:
+    promise: Promise
+
+    def load(self, promise_id: str) -> Promise:
+        return self.promise
 
 
 @dataclass
@@ -40,7 +49,8 @@ def test_abductio_happy_path(tmp_path: Path) -> None:
         StaticAnalysisResult(total_llm_calls=10, violations=0, coverage=0.98, findings=[])
     )
     runner = FakeTestRunner(exit_code=0)
-    service = EvaluationService(analyzer=analyzer, test_runner=runner)
+    loader = FakePromiseLoader(Promise(id="llm-input-logging", statement="test"))
+    service = EvaluationService(analyzer=analyzer, test_runner=runner, promise_loader=loader)
     result = service.evaluate_path(str(tmp_path), config=_base_config())
 
     assert result.verdict == "green"
@@ -59,7 +69,8 @@ def test_abductio_defeater_red(tmp_path: Path) -> None:
         StaticAnalysisResult(total_llm_calls=10, violations=2, coverage=0.98, findings=[])
     )
     runner = FakeTestRunner(exit_code=0)
-    service = EvaluationService(analyzer=analyzer, test_runner=runner)
+    loader = FakePromiseLoader(Promise(id="llm-input-logging", statement="test"))
+    service = EvaluationService(analyzer=analyzer, test_runner=runner, promise_loader=loader)
     config = _base_config()
     config = EvaluationConfig(
         promise_id=config.promise_id,
@@ -88,7 +99,8 @@ def test_abductio_defeater_red(tmp_path: Path) -> None:
 
 def test_abductio_semgrep_misconfig_is_error(tmp_path: Path) -> None:
     runner = FakeTestRunner(exit_code=0)
-    service = EvaluationService(analyzer=None, test_runner=runner)
+    loader = FakePromiseLoader(Promise(id="llm-input-logging", statement="test"))
+    service = EvaluationService(analyzer=None, test_runner=runner, promise_loader=loader)
     config = EvaluationConfig(
         promise_id="llm-input-logging",
         threshold=0.5,

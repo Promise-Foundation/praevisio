@@ -13,9 +13,10 @@ import abductio_core
 
 from ..domain.entities import EvaluationResult, StaticAnalysisResult
 from ..domain.evaluation_config import EvaluationConfig
-from ..domain.ports import StaticAnalyzer, TestRunner
+from ..domain.ports import StaticAnalyzer, TestRunner, PromiseLoader
 from ..infrastructure.abductio_ports import DeterministicDecomposer, DeterministicEvaluator, ListAuditSink
 from ..infrastructure.evidence_store import EvidenceStore
+from ..infrastructure.promise_loader import YamlPromiseLoader
 from ..infrastructure.static_analysis_semgrep import SemgrepStaticAnalyzer
 from ..infrastructure.test_runner_subprocess import SubprocessPytestRunner
 
@@ -27,9 +28,11 @@ class EvaluationService:
         self,
         analyzer: StaticAnalyzer | None = None,
         test_runner: TestRunner | None = None,
+        promise_loader: PromiseLoader | None = None,
     ) -> None:
         self._analyzer = analyzer
         self._test_runner = test_runner or SubprocessPytestRunner()
+        self._promise_loader = promise_loader
 
     def evaluate_path(self, path: str, config: EvaluationConfig | None = None) -> EvaluationResult:
         evaluation = config or EvaluationConfig()
@@ -39,6 +42,53 @@ class EvaluationService:
         run_root = repo_root / evaluation.run_dir / run_id
         run_root.mkdir(parents=True, exist_ok=True)
         evidence_store = EvidenceStore(run_root)
+
+        promise = None
+        promise_error = None
+        try:
+            loader = self._promise_loader or YamlPromiseLoader(
+                base_path=repo_root / "governance" / "promises"
+            )
+            promise = loader.load(evaluation.promise_id)
+        except Exception as exc:
+            promise_error = str(exc)
+
+        manifest_metadata = {
+            "run_id": run_id,
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "praevisio_version": self._praevisio_version(),
+            "abductio_core_version": getattr(abductio_core, "__version__", "unknown"),
+            "session_config": {
+                "credits": evaluation.abductio_credits,
+                "tau": evaluation.abductio_tau,
+                "epsilon": evaluation.abductio_epsilon,
+                "gamma": evaluation.abductio_gamma,
+                "alpha": evaluation.abductio_alpha,
+                "required_slots": list(evaluation.abductio_required_slots),
+            },
+        }
+
+        if promise_error:
+            manifest_path, manifest_sha = evidence_store.write_manifest(metadata=manifest_metadata)
+            return EvaluationResult(
+                credence=0.0,
+                verdict="error",
+                details=self._details(
+                    evaluation=evaluation,
+                    evidence={},
+                    evidence_refs={},
+                    applicable=True,
+                    semgrep_skipped=True,
+                    audit_path=None,
+                    audit_sha=None,
+                    manifest_path=manifest_path,
+                    manifest_sha=manifest_sha,
+                    run_id=run_id,
+                    session_result=None,
+                    promise=promise,
+                    promise_error=promise_error,
+                ),
+            )
 
         analyzer, semgrep_rules_path = self._build_analyzer(evaluation, self._analyzer)
 
@@ -104,20 +154,6 @@ class EvaluationService:
         manifest_sha = None
         audit_path = None
         audit_sha = None
-        manifest_metadata = {
-            "run_id": run_id,
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
-            "praevisio_version": self._praevisio_version(),
-            "abductio_core_version": getattr(abductio_core, "__version__", "unknown"),
-            "session_config": {
-                "credits": evaluation.abductio_credits,
-                "tau": evaluation.abductio_tau,
-                "epsilon": evaluation.abductio_epsilon,
-                "gamma": evaluation.abductio_gamma,
-                "alpha": evaluation.abductio_alpha,
-                "required_slots": list(evaluation.abductio_required_slots),
-            },
-        }
 
         if sa_result.error or test_error:
             manifest_path, manifest_sha = evidence_store.write_manifest(metadata=manifest_metadata)
@@ -136,6 +172,8 @@ class EvaluationService:
                     manifest_sha=manifest_sha,
                     run_id=run_id,
                     session_result=None,
+                    promise=promise,
+                    promise_error=promise_error,
                 ),
             )
 
@@ -201,6 +239,8 @@ class EvaluationService:
                 session_result=result.to_dict_view(),
                 gates=gates,
                 k_root=k_root,
+                promise=promise,
+                promise_error=promise_error,
             ),
         )
 
@@ -251,7 +291,19 @@ class EvaluationService:
         session_result: Dict[str, Any] | None,
         gates: Dict[str, bool] | None = None,
         k_root: float | None = None,
+        promise: "Promise | None" = None,
+        promise_error: str | None = None,
     ) -> Dict[str, Any]:
+        promise_payload = None
+        if promise is not None:
+            promise_payload = {
+                "id": promise.id,
+                "statement": promise.statement,
+                "version": promise.version,
+                "domain": promise.domain,
+                "critical": promise.critical,
+                "credence_threshold": promise.credence_threshold,
+            }
         return {
             "promise_id": evaluation.promise_id,
             "threshold": evaluation.threshold,
@@ -262,6 +314,8 @@ class EvaluationService:
             "test_error": evidence.get("test_error"),
             "evidence": dict(evidence),
             "evidence_refs": dict(evidence_refs),
+            "promise": promise_payload,
+            "promise_error": promise_error,
             "audit_path": str(audit_path) if audit_path else None,
             "audit_sha256": audit_sha,
             "manifest_path": str(manifest_path) if manifest_path else None,

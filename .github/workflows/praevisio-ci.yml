@@ -1,0 +1,44 @@
+name: Praevisio Governance Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  governance-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          npm install -g promptfoo
+
+      - name: Run governance gate
+        run: |
+          praevisio ci-gate \
+            --severity high \
+            --fail-on-violation \
+            --output logs/ci-gate-report.json \
+            --config .praevisio.yaml
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: praevisio-run
+          path: |
+            logs/ci-gate-report.json
+            .praevisio/runs/**

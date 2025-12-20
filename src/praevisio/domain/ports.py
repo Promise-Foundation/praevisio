@@ -21,6 +21,14 @@ class PromiseRepository(ABC):
         raise NotImplementedError
 
 
+class PromiseLoader(ABC):
+    """Port for loading promise definitions from YAML files."""
+
+    @abstractmethod
+    def load(self, promise_id: str) -> Promise:  # pragma: no cover - interface
+        raise NotImplementedError
+
+
 class GitRepository(ABC):
     """Port for interacting with Git repositories."""
 

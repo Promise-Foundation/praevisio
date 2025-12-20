@@ -1,0 +1,12 @@
+id: third-party-risk-reviewed
+version: 0.1.0
+domain: /risk/third-party
+statement: Third-party vendors must have current security reviews before use.
+critical: true
+success_criteria:
+  credence_threshold: 0.90
+  evidence_types:
+    - procedural
+parameters: {}
+stake:
+  credits: 0

@@ -3,7 +3,7 @@
 These hands-on tutorials turn Praevisio into a learn-by-doing AI governance lab.
 
 Structure
-- Each lesson introduces: a real standards hook (NIST AI RMF / EU AI Act / ISO 42001), a new promise in YAML, and one new type of evidence collected with an open-source tool.
+- Each lesson introduces a real standards hook (NIST AI RMF / EU AI Act / ISO 42001) and at least one new governance artifact (promise, evidence, or gate).
 - Lessons build on each other but are self-contained experiments.
 
 Standards spine
@@ -16,5 +16,10 @@ Standards spine
 :titlesonly:
 
 01-logging-basics
+02-static-analysis
+03-branch-policy
+04-red-teaming
+05-prompt-injection
+06-privacy-protection
+07-third-party-risk
 ```
-

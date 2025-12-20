@@ -34,7 +34,11 @@ class SemgrepStaticAnalyzer(StaticAnalyzer):
                 violations=0,
                 coverage=0.0,
                 findings=[],
-                error=f"semgrep rules file not found at {rules_path}",
+                error=(
+                    f"Semgrep rules file not found at {rules_path}\n"
+                    "Expected: governance/evidence/semgrep_rules.yaml\n"
+                    "Run 'praevisio install' to create a default config"
+                ),
             )
 
         # First: run Semgrep with JSON output using our governance rules
@@ -55,11 +59,16 @@ class SemgrepStaticAnalyzer(StaticAnalyzer):
 
         findings = output.get("results", [])
 
+        def _match_rule(check_id: str | None, rule_id: str) -> bool:
+            if not check_id:
+                return False
+            return check_id == rule_id or check_id.endswith(f".{rule_id}")
+
         llm_violations = [
-            f for f in findings if f.get("check_id") == self._violation_rule_id
+            f for f in findings if _match_rule(f.get("check_id"), self._violation_rule_id)
         ]
         llm_call_sites = [
-            f for f in findings if f.get("check_id") == self._callsite_rule_id
+            f for f in findings if _match_rule(f.get("check_id"), self._callsite_rule_id)
         ]
 
         total_calls = len(llm_call_sites)

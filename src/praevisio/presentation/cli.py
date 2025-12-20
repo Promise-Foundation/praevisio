@@ -259,6 +259,14 @@ def show_run(
             typer.echo(f"- {kind}: {path} ({sha})")
 
 
+@app.command()
+def version() -> None:
+    """Print Praevisio version."""
+    from .. import __version__
+
+    typer.echo(f"praevisio {__version__}")
+
+
 def _latest_audit_file(runs_dir: Path) -> Path | None:
     if not runs_dir.exists():
         return None

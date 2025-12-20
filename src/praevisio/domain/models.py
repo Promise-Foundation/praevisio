@@ -5,12 +5,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Promise:
-    """A verifiable compliance promise.
-
-    Part of the domain layer. This object contains only domain data and
-    is free of presentation or infrastructure concerns.
-    """
+    """A verifiable compliance promise."""
 
     id: str
     statement: str
-
+    version: str = "0.1.0"
+    domain: str = ""
+    critical: bool = True
+    credence_threshold: float = 0.95

@@ -1,0 +1,12 @@
+id: llm-privacy-redaction
+version: 0.1.0
+domain: /llm/privacy
+statement: The system must redact sensitive data before sending prompts to the LLM.
+critical: true
+success_criteria:
+  credence_threshold: 0.90
+  evidence_types:
+    - procedural
+parameters: {}
+stake:
+  credits: 0
