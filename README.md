@@ -77,10 +77,9 @@ praevisio version
 
 ---
 
-## 10‑minute quickstart (use the sandbox repo)
+## 10‑minute quickstart (in‑repo fixture)
 
-If you want a ready‑made governed repository, use:
-https://github.com/Promise-Foundation/praevisio-lab
+Run Praevisio against the governed fixture in this repository:
 
 Typical flow inside a governed repo:
 
@@ -90,7 +89,11 @@ Typical flow inside a governed repo:
 4) Run:
 
 ```bash
-praevisio evaluate-commit . --config .praevisio.yaml --json
+praevisio ci-gate fixtures/hello-world \
+  --severity high \
+  --fail-on-violation \
+  --output logs/ci-gate-report.json \
+  --config fixtures/hello-world/.praevisio.yaml
 ```
 
 You’ll get:
@@ -317,7 +320,7 @@ All tutorials live under `docs/tutorials/`:
 - Privacy protection — PII redaction tests and gating
 - Third‑party risk — enforce approvals/expiry via repo‑local registry + tests
 
-If you want a guided sandbox, start with:
+If you want a guided external sandbox, use:
 https://github.com/Promise-Foundation/praevisio-lab
 
 ---
