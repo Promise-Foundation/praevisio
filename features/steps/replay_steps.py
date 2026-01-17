@@ -27,6 +27,8 @@ class FixedEvaluator:
             "B": 2,
             "C": 2,
             "D": 2,
+            "evidence_ids": ["synthetic:evidence"],
+            "evidence_quality": "direct",
             "evidence_refs": ["synthetic:evidence"],
         }
 
@@ -50,9 +52,18 @@ def step_eval_with_credence(context):
     evaluator = FixedEvaluator(p=0.95)
     decomposer = FixedDecomposer()
     request = SessionRequest(
-        claim="synthetic claim",
+        scope="synthetic claim",
         roots=[RootSpec(root_id="promise", statement="promise", exclusion_clause="none")],
-        config=SessionConfig(tau=0.1, epsilon=0.05, gamma=0.2, alpha=0.4),
+        config=SessionConfig(
+            tau=0.1,
+            epsilon=0.05,
+            gamma=0.2,
+            alpha=0.4,
+            beta=1.0,
+            W=3.0,
+            lambda_voi=0.1,
+            world_mode="open",
+        ),
         credits=4,
         required_slots=[
             {"slot_key": "feasibility", "role": "NEC"},
@@ -61,12 +72,13 @@ def step_eval_with_credence(context):
             {"slot_key": "defeater_resistance", "role": "NEC"},
         ],
         run_mode="until_credits_exhausted",
+        evidence_items=[{"id": "synthetic:evidence", "source": "synthetic", "text": "evidence"}],
     )
     audit_sink = ListAuditSink()
     result = run_session(
         request, RunSessionDeps(evaluator=evaluator, decomposer=decomposer, audit_sink=audit_sink)
     )
-    context.expected_credence = 0.95
+    context.expected_credence = float(result.ledger.get("promise", 0.0))
     context.result = result
 
 

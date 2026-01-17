@@ -64,6 +64,10 @@ class EvaluationService:
                 "epsilon": evaluation.abductio_epsilon,
                 "gamma": evaluation.abductio_gamma,
                 "alpha": evaluation.abductio_alpha,
+                "beta": evaluation.abductio_beta,
+                "W": evaluation.abductio_weight_cap,
+                "lambda_voi": evaluation.abductio_lambda_voi,
+                "world_mode": evaluation.abductio_world_mode,
                 "required_slots": list(evaluation.abductio_required_slots),
             },
         }
@@ -149,6 +153,11 @@ class EvaluationService:
             "no_call_sites": sa_result.total_llm_calls == 0 and sa_result.error is None,
         }
         evidence_refs = {"pytest": [pytest_ref], "semgrep": [semgrep_ref]}
+        evidence_items = [
+            {"id": ref, "source": kind, "text": ""}
+            for kind, refs in evidence_refs.items()
+            for ref in refs
+        ]
 
         manifest_path = None
         manifest_sha = None
@@ -184,7 +193,7 @@ class EvaluationService:
             slot_statements={},
         )
         session = SessionRequest(
-            claim=f"Commit at {repo_root} satisfies promise {evaluation.promise_id}",
+            scope=f"Commit at {repo_root} satisfies promise {evaluation.promise_id}",
             roots=[
                 RootSpec(
                     root_id=evaluation.promise_id,
@@ -197,10 +206,15 @@ class EvaluationService:
                 epsilon=evaluation.abductio_epsilon,
                 gamma=evaluation.abductio_gamma,
                 alpha=evaluation.abductio_alpha,
+                beta=evaluation.abductio_beta,
+                W=evaluation.abductio_weight_cap,
+                lambda_voi=evaluation.abductio_lambda_voi,
+                world_mode=evaluation.abductio_world_mode,
             ),
             credits=evaluation.abductio_credits,
             required_slots=evaluation.abductio_required_slots,
             run_mode="until_credits_exhausted",
+            evidence_items=evidence_items,
         )
         result = run_session(session, RunSessionDeps(evaluator=evaluator, decomposer=decomposer, audit_sink=audit_sink))
 

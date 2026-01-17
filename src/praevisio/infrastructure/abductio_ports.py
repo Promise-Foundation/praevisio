@@ -76,6 +76,8 @@ class DeterministicEvaluator:
             "B": B,
             "C": C,
             "D": D,
+            "evidence_ids": list(self.evidence_refs.get("semgrep", [])),
+            "evidence_quality": "direct",
             "evidence_refs": self.evidence_refs.get("semgrep", []),
         }
 
@@ -100,6 +102,8 @@ class DeterministicEvaluator:
             "B": B,
             "C": C,
             "D": D,
+            "evidence_ids": list(self.evidence_refs.get("semgrep", [])),
+            "evidence_quality": "direct",
             "evidence_refs": self.evidence_refs.get("semgrep", []),
         }
 
@@ -123,6 +127,8 @@ class DeterministicEvaluator:
             "B": B,
             "C": C,
             "D": D,
+            "evidence_ids": list(self.evidence_refs.get("pytest", [])),
+            "evidence_quality": "direct",
             "evidence_refs": self.evidence_refs.get("pytest", []),
         }
 
@@ -142,5 +148,7 @@ class DeterministicEvaluator:
             "B": B,
             "C": C,
             "D": D,
+            "evidence_ids": list(refs),
+            "evidence_quality": "direct",
             "evidence_refs": refs,
         }

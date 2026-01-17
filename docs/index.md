@@ -14,6 +14,7 @@ Recent architecture note: application services are now split into focused module
 :caption: Project Docs
 
 white-paper
+quickstart
 api
 tutorials/index
 ```

@@ -158,8 +158,6 @@ success_criteria:
   evidence_types:
     - procedural
 parameters: {}
-stake:
-  credits: 0
 ```
 
 ## Configure Praevisio

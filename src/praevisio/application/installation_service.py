@@ -17,6 +17,10 @@ evaluation:
   abductio_epsilon: 0.05
   abductio_gamma: 0.20
   abductio_alpha: 0.40
+  abductio_beta: 1.0
+  abductio_weight_cap: 3.0
+  abductio_lambda_voi: 0.1
+  abductio_world_mode: open
   abductio_required_slots:
     - slot_key: feasibility
       role: NEC

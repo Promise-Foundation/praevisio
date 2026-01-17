@@ -87,6 +87,10 @@ def test_abductio_defeater_red(tmp_path: Path) -> None:
         abductio_epsilon=config.abductio_epsilon,
         abductio_gamma=config.abductio_gamma,
         abductio_alpha=config.abductio_alpha,
+        abductio_beta=config.abductio_beta,
+        abductio_weight_cap=config.abductio_weight_cap,
+        abductio_lambda_voi=config.abductio_lambda_voi,
+        abductio_world_mode=config.abductio_world_mode,
         abductio_required_slots=config.abductio_required_slots,
         run_dir=config.run_dir,
     )

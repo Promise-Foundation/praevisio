@@ -49,6 +49,7 @@ def _write_config(repo_path: Path) -> Path:
                 "evaluation:",
                 "  promise_id: llm-input-logging",
                 "  threshold: 0.90",
+                "  abductio_credits: 8",
                 "  pytest_targets:",
                 "    - tests/test_logging.py",
                 "  semgrep_rules_path: governance/evidence/semgrep_rules.yaml",

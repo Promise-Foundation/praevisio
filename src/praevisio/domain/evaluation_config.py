@@ -20,6 +20,10 @@ class EvaluationConfig:
     abductio_epsilon: float = 0.05
     abductio_gamma: float = 0.20
     abductio_alpha: float = 0.40
+    abductio_beta: float = 1.0
+    abductio_weight_cap: float = 3.0
+    abductio_lambda_voi: float = 0.1
+    abductio_world_mode: str = "open"
     abductio_required_slots: List[Dict[str, str]] = field(default_factory=lambda: [
         {"slot_key": "feasibility", "role": "NEC"},
         {"slot_key": "availability", "role": "NEC"},

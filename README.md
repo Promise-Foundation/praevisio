@@ -265,8 +265,6 @@ success_criteria:
     - procedural
     - pattern
 parameters: {}
-stake:
-  credits: 0
 ```
 
 Conventions:

@@ -123,8 +123,6 @@ def step_create_promise(context) -> None:
         "    - direct_observational\n"
         "    - procedural\n"
         "parameters: {}\n"
-        "stake:\n"
-        "  credits: 0\n"
     )
     _write_file(context.repo_path / "governance/promises/llm-input-logging.yaml", promise)
 
@@ -135,6 +133,7 @@ def step_create_config(context) -> None:
         "evaluation:\n"
         "  promise_id: llm-input-logging\n"
         "  threshold: 0.95\n"
+        "  abductio_credits: 8\n"
         "  pytest_targets:\n"
         "    - tests/test_logging.py\n"
         "  semgrep_rules_path: governance/evidence/semgrep_rules.yaml\n"

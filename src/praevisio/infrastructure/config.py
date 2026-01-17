@@ -52,6 +52,19 @@ class YamlConfigLoader(ConfigLoader):
             abductio_epsilon=float(evaluation_raw.get("abductio_epsilon", defaults.abductio_epsilon)),
             abductio_gamma=float(evaluation_raw.get("abductio_gamma", defaults.abductio_gamma)),
             abductio_alpha=float(evaluation_raw.get("abductio_alpha", defaults.abductio_alpha)),
+            abductio_beta=float(evaluation_raw.get("abductio_beta", defaults.abductio_beta)),
+            abductio_weight_cap=float(
+                evaluation_raw.get(
+                    "abductio_weight_cap",
+                    evaluation_raw.get("abductio_W", defaults.abductio_weight_cap),
+                )
+            ),
+            abductio_lambda_voi=float(
+                evaluation_raw.get("abductio_lambda_voi", defaults.abductio_lambda_voi)
+            ),
+            abductio_world_mode=str(
+                evaluation_raw.get("abductio_world_mode", defaults.abductio_world_mode)
+            ),
             abductio_required_slots=list(
                 evaluation_raw.get("abductio_required_slots", defaults.abductio_required_slots)
             ),
