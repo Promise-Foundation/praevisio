@@ -4,6 +4,18 @@
 
 **Where to run this:** in your governed app repo. If you are in the Praevisio source repo, work inside `tmp-eval-repo/`.
 
+
+## Run this tutorial with praevisio-lab (recommended)
+
+If you want a ready-made repo that runs Promptfoo via pytest, use the lab case:
+
+```
+cd ~/projects/praevisio-lab
+PROMPTFOO_OPTIONAL=1 python -m praevisio_lab run-case red_team_promptfoo   --registry cases/manifest.yaml   --mode praevisio   --workspace .praevisio-lab/work   --bundles-dir .praevisio-lab/bundles   --json
+```
+
+If Promptfoo is installed and configured, you can omit `PROMPTFOO_OPTIONAL=1`.
+
 ## What You'll Learn
 
 - Run a red-team suite (Promptfoo) as part of pytest

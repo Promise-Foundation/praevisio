@@ -13,6 +13,16 @@ This tutorial shows the current, supported workflow:
 
 **Where to run this:** These steps are meant to run in the repository you are governing (an “app repo” with `app/`, `tests/`, `governance/`). If you are reading this inside the Praevisio source repo, run it inside `tmp-eval-repo/`.
 
+
+## Run this tutorial with praevisio-lab (recommended)
+
+If you want a ready-made repo with this exact setup, use the lab case:
+
+```
+cd ~/projects/praevisio-lab
+python -m praevisio_lab run-case hello_world_logging   --registry cases/manifest.yaml   --mode praevisio   --workspace .praevisio-lab/work   --bundles-dir .praevisio-lab/bundles   --json
+```
+
 ## Tiers (Who This Is For)
 
 - **Tier 1 (developer):** see a clear pass/fail and a fixable line.

@@ -9,6 +9,20 @@
 **You never edit Praevisio core.** All configuration is in your repo.
 **Where to run this:** use your governed app repo. If you are in the Praevisio source repo, work inside `tmp-eval-repo/`.
 
+
+## Run this tutorial with praevisio-lab (recommended)
+
+If you want a ready-made repo with the Semgrep rules already wired, use the lab case:
+
+```
+cd ~/projects/praevisio-lab
+python -m praevisio_lab run-case static_analysis_logging   --registry cases/manifest.yaml   --mode baseline-b   --workspace .praevisio-lab/work   --bundles-dir .praevisio-lab/bundles   --json
+```
+
+Tip: baseline-b is Semgrep-only evidence. If you want Semgrep to run inside praevisio mode,
+set `semgrep_rules_path`, `semgrep_callsite_rule_id`, and `semgrep_violation_rule_id` in the
+case config and rerun in `--mode praevisio`.
+
 ## Step 1: Strengthen the Rule
 
 We’ll reuse the Semgrep rules from Tutorial 1, but now we’ll interpret coverage/violations and scope the rule to your real boundary.

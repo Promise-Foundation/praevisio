@@ -9,6 +9,18 @@
 **Reminder:** configuration lives in your repo. No Praevisio core edits.
 **Where to run this:** in your governed app repo. If you are in the Praevisio source repo, work inside `tmp-eval-repo/`.
 
+
+## Run this tutorial with praevisio-lab (recommended)
+
+If you want a ready-made repo that produces a CI gate report, use the lab case:
+
+```
+cd ~/projects/praevisio-lab
+python -m praevisio_lab run-case ci_gate_logging   --registry cases/manifest.yaml   --mode ci-gate   --workspace .praevisio-lab/work   --bundles-dir .praevisio-lab/bundles   --json
+```
+
+The bundle includes `ci_gate/ci-gate-report.json` for review.
+
 ## Step 1: Add Severity Thresholds
 
 In `.praevisio.yaml`:

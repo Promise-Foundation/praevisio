@@ -5,6 +5,16 @@
 **Where to run this:** in your governed app repo. If you are in the Praevisio source repo, work inside `tmp-eval-repo/`.
 These tutorials assume you focus `.praevisio.yaml` on one promise at a time.
 
+
+## Run this tutorial with praevisio-lab (recommended)
+
+If you want a ready-made repo with injection tests wired in, use the lab case:
+
+```
+cd ~/projects/praevisio-lab
+python -m praevisio_lab run-case prompt_injection   --registry cases/manifest.yaml   --mode praevisio   --workspace .praevisio-lab/work   --bundles-dir .praevisio-lab/bundles   --json
+```
+
 ## What You'll Learn
 
 - Add tests that verify injection defenses are wired correctly
