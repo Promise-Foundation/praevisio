@@ -1,0 +1,171 @@
+A) Praevisio whitepaper — additions to incorporate your points better
+
+Your Praevisio draft is already very strong and unusually concrete. The biggest risk is that readers will (a) lose the “why this matters” thread amid the normative detail, and (b) fail to visualize what gets enforced, what gets logged, and how it plugs into real CI/workflows.
+
+1) Add an explicit “threat model + non-goals” section (early)
+
+Why: You have the mechanics, but enterprise/security readers want to know: what attacks and failure modes this prevents.
+
+Add Section 1.1 Threat model and non-goals:
+
+Threats addressed:
+
+silent policy drift (policy changes without trace)
+
+non-reproducible evidence (tool versions/flags change results)
+
+ordering bias (focal privilege / seed effects)
+
+evidence laundering (claims not actually grounded in artifacts)
+
+best-of-bad-set (confident PASS/FAIL when library mismatched)
+
+tampering (audit files edited post hoc)
+
+agent creep (LLM proposes, system applies without validation)
+
+Non-goals:
+
+forecasting incidents
+
+replacing human audit sign-off for high-risk merges
+
+market-style EVSI
+
+Add 5–8 crisp claim sentences for this:
+
+“Praevisio is designed to fail loudly under library mismatch, grounding failure, and out-of-regime evidence rather than emitting confident but unjustified CI verdicts.”
+
+“Praevisio treats nondeterminism, missing artifacts, and unverifiable pointers as first-class safety failures—not ‘low confidence passes.’”
+
+“Praevisio’s invariance guarantees apply to hypothesis ordering, promise ordering, slot ordering, and scheduler tie-breaking.”
+
+2) Add a one-page “Reader map” and “System at a glance” figure
+
+Why: You have an operational governance stack, but it needs a single diagram to make the separation of layers unforgettable.
+
+Add a figure:
+
+Inputs: .praevisio.yaml, code diff, evidence tools
+
+Evidence layer → manifests + evidence pointers/spans
+
+ABDUCTIO inference layer → {p(h), k(h), residuals, anomalies}
+
+Decision policy plug-in → CI verdict + operator actions
+
+Outputs: audit artifacts, decision JSON, report JSON
+
+Add a table “What changes the ledger vs what cannot”:
+
+DECOMPOSE: structure only; no mass moves
+
+EVALUATE: only source of Δw
+
+Decision layer: does not modify {p,k}; only consumes it
+
+3) Add a “Decision policy plug-in contract” appendix with I/O schema
+
+Why: You say decision is separate, but to be operational you need the exact interface.
+
+Add an appendix with:
+
+Required input fields (already in 9.1), but make it schema-like
+
+Required output fields: verdict, reasons, threshold snapshot, override author, override hash, timestamp, policy version
+
+Deterministic tie-breakers in policy evaluation
+
+Claim sentence:
+
+“Any CI verdict must be reproducible from {audit.json, manifest.json, policy.json} without access to the repository or external services.”
+
+4) Add a “Library versioning + migration” section
+
+Why: You rely on hypothesis-library metadata (applicability, exclusion clauses, failure mechanism splits). That creates a real governance challenge: libraries evolve.
+
+Add Section 3.3 Hypothesis-library governance:
+
+Versioning rules: semantic versioning for hypothesis sets
+
+Migration: how old audits remain replayable when library updates happen
+
+“Library mismatch” playbook: how to expand FAIL mechanisms safely
+
+Compatibility: “run uses library version X” must be logged and pinned
+
+Claim sentence:
+
+“Praevisio audits are replayable years later because both evidence and hypothesis libraries are version-pinned and included by hash.”
+
+5) Add explicit “deterministic numeric handling” and “concurrency constraint” section
+
+Why: Permutation invariance can break if you allow parallel reductions, float nondeterminism, or non-stable JSON serialization.
+
+Add Section 8.4 Deterministic arithmetic and serialization:
+
+fixed rounding rules for logged floats
+
+log-sum-exp order requirements
+
+canonical JSON serialization (sorted keys, stable float formatting)
+
+concurrency: either forbidden in inference core or requires deterministic reduction
+
+Claim sentence:
+
+“Praevisio’s determinism includes numeric determinism and stable serialization, not merely deterministic control flow.”
+
+6) Add a “negative controls test suite” section (very persuasive)
+
+Why: You mention mismatch checks and anomalies, but a test harness makes it credible.
+
+Add Section 12.1 Negative controls (required):
+
+Mismatched hypothesis set should yield:
+
+high H_NOA (or high γ_NOA)
+
+low k caps
+
+A1 triggered
+
+Evidence corruption should yield A2
+
+Low applicability + high confidence should yield A3
+
+Overlap should yield A4
+
+Claim sentence:
+
+“Praevisio ships with negative-control fixtures that prove the engine elevates residuals and emits anomalies under mismatch rather than selecting a ‘best’ hypothesis.”
+
+7) Add one “complete worked example” for governance (not the abstract mechanics)
+
+You have an illustrative CI output JSON, but add a narrative example that shows:
+
+promise scope
+
+hypothesis set expansion
+
+artifacts produced
+
+anomaly triggered → operator action
+
+decision policy outcome
+
+Make it short and visceral: “manifest mismatch blocks merge even if p(H_PASS) is high.”
+
+8) Add “policy mapping” accountability section
+
+You already list policy_mapping.json, but add:
+
+how mapping is audited
+
+how mapping changes are detected
+
+who owns mapping
+
+Claim sentence:
+
+“Policy-to-evidence mappings are treated as governed code: versioned, reviewed, hashed, and replayed.”

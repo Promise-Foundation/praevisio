@@ -31,4 +31,5 @@ class YamlPromiseLoader(PromiseLoader):
             credence_threshold=float(
                 (data.get("success_criteria") or {}).get("credence_threshold", 0.95)
             ),
+            applicable=data.get("applicable"),
         )

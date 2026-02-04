@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 from abductio_core.domain.audit import AuditEvent
+from abductio_core.application.dto import EvidenceItem
 
 
 @dataclass
@@ -39,7 +40,13 @@ class DeterministicEvaluator:
     evidence: Dict[str, Any]
     evidence_refs: Dict[str, List[str]]
 
-    def evaluate(self, node_key: str) -> Dict[str, Any]:
+    def evaluate(
+        self,
+        node_key: str,
+        statement: str = "",
+        context: Dict[str, Any] | None = None,
+        evidence_items: List[EvidenceItem] | None = None,
+    ) -> Dict[str, Any]:
         if ":" not in node_key:
             return {}
         _, slot_key = node_key.split(":", 1)
@@ -152,3 +159,11 @@ class DeterministicEvaluator:
             "evidence_quality": "direct",
             "evidence_refs": refs,
         }
+
+
+@dataclass
+class DeterministicSearcher:
+    """No-op searcher to satisfy abductio-core SearchPort."""
+
+    def search(self, query: str, *, limit: int, metadata: Dict[str, Any]) -> List[EvidenceItem]:
+        return []

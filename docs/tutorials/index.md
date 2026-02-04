@@ -13,6 +13,7 @@ If you want runnable, ready-made tutorials, use the praevisio-lab cases and comm
 | 05 Prompt injection | `prompt_injection` | `python -m praevisio_lab run-case prompt_injection --registry cases/manifest.yaml --mode praevisio --workspace .praevisio-lab/work --bundles-dir .praevisio-lab/bundles --json` |
 | 06 Privacy protection | `privacy_redaction` | `python -m praevisio_lab run-case privacy_redaction --registry cases/manifest.yaml --mode praevisio --workspace .praevisio-lab/work --bundles-dir .praevisio-lab/bundles --json` |
 | 07 Third-party risk | `third_party_risk` | `python -m praevisio_lab run-case third_party_risk --registry cases/manifest.yaml --mode praevisio --workspace .praevisio-lab/work --bundles-dir .praevisio-lab/bundles --json` |
+| 08 Verdicts & decisions | `ci_gate_logging` | `python -m praevisio_lab run-case ci_gate_logging --registry cases/manifest.yaml --mode ci-gate --workspace .praevisio-lab/work --bundles-dir .praevisio-lab/bundles --json` |
 
 Notes:
 - Use `~/projects/praevisio-lab` as your working directory.
@@ -40,4 +41,5 @@ Standards spine
 05-prompt-injection
 06-privacy-protection
 07-third-party-risk
+08-verdicts
 ```

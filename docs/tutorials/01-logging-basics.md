@@ -219,6 +219,8 @@ evaluation:
   abductio_tau: 0.70
   abductio_epsilon: 0.05
   abductio_gamma: 0.20
+  abductio_gamma_noa: 0.10
+  abductio_gamma_und: 0.10
   abductio_alpha: 0.40
   abductio_beta: 1.0
   abductio_weight_cap: 3.0

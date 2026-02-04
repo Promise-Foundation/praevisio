@@ -19,6 +19,8 @@ class EvaluationConfig:
     abductio_tau: float = 0.70
     abductio_epsilon: float = 0.05
     abductio_gamma: float = 0.20
+    abductio_gamma_noa: float = 0.10
+    abductio_gamma_und: float = 0.10
     abductio_alpha: float = 0.40
     abductio_beta: float = 1.0
     abductio_weight_cap: float = 3.0
@@ -31,3 +33,8 @@ class EvaluationConfig:
         {"slot_key": "defeater_resistance", "role": "NEC"},
     ])
     run_dir: str = ".praevisio/runs"
+    hash_only_evidence: bool = False
+    offline: bool = False
+    determinism_mode: str = "warn"  # warn | strict
+    determinism_runs: int = 1
+    determinism_seed: int | None = None

@@ -6,19 +6,28 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from behave import given, when, then
+from typer.testing import CliRunner
+
+import praevisio.presentation.cli as cli_module
 
 from abductio_core.application.dto import RootSpec, SessionConfig, SessionRequest
 from abductio_core.application.ports import RunSessionDeps
 from abductio_core.application.use_cases.run_session import run_session
 from abductio_core.application.use_cases.replay_session import replay_session
 
-from praevisio.infrastructure.abductio_ports import ListAuditSink
+from praevisio.infrastructure.abductio_ports import ListAuditSink, DeterministicSearcher
 
 @dataclass
 class FixedEvaluator:
     p: float
 
-    def evaluate(self, node_key: str) -> dict:
+    def evaluate(
+        self,
+        node_key: str,
+        statement: str = "",
+        context: dict | None = None,
+        evidence_items: list | None = None,
+    ) -> dict:
         if ":" not in node_key:
             return {}
         return {
@@ -57,6 +66,8 @@ def step_eval_with_credence(context):
         config=SessionConfig(
             tau=0.1,
             epsilon=0.05,
+            gamma_noa=0.1,
+            gamma_und=0.1,
             gamma=0.2,
             alpha=0.4,
             beta=1.0,
@@ -75,8 +86,15 @@ def step_eval_with_credence(context):
         evidence_items=[{"id": "synthetic:evidence", "source": "synthetic", "text": "evidence"}],
     )
     audit_sink = ListAuditSink()
+    searcher = DeterministicSearcher()
     result = run_session(
-        request, RunSessionDeps(evaluator=evaluator, decomposer=decomposer, audit_sink=audit_sink)
+        request,
+        RunSessionDeps(
+            evaluator=evaluator,
+            decomposer=decomposer,
+            audit_sink=audit_sink,
+            searcher=searcher,
+        ),
     )
     context.expected_credence = float(result.ledger.get("promise", 0.0))
     context.result = result
@@ -92,6 +110,17 @@ def step_audit_file(context):
 
 @when("I replay the audit")
 def step_replay_audit(context):
+    if getattr(context, "use_cli_replay", False):
+        runner = CliRunner()
+        args = ["replay-audit", str(context.audit_path)]
+        if getattr(context, "replay_strict", False):
+            args.append("--strict-determinism")
+        if getattr(context, "replay_json", False):
+            args.append("--json")
+        result = runner.invoke(cli_module.app, args)
+        context.replay_cli_result = result
+        context.replay_output = result.output
+        return
     audit = json.loads(Path(context.audit_path).read_text(encoding="utf-8"))
     context.replay_result = replay_session(audit)
 

@@ -11,3 +11,4 @@ from .evaluation_config import EvaluationConfig
 class Configuration:
     hooks: List[Hook] = field(default_factory=list)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
+    promises: List[str] = field(default_factory=list)

@@ -1,16 +1,16 @@
 [
   {
     "id": "llm-input-logging",
-    "credence": 0.7,
+    "credence": 0.8,
     "verdict": "red",
     "threshold": 0.95,
     "severity": "high",
     "applicable": true,
     "status": "fail",
     "reasons": [],
-    "audit_path": null,
-    "audit_sha256": null,
-    "manifest_path": null,
-    "manifest_sha256": null
+    "audit_path": "/var/folders/y6/tk2cywhn3hb104rqr3nzwy1m0000gn/T/praevisio-verdict-zx49_4xk/.praevisio/runs/20260204T193111Z/audit.json",
+    "audit_sha256": "f18db94694f7087501abe0ba7ce1b2d2df71964bac4e4754432c4ad32abf0789",
+    "manifest_path": "/var/folders/y6/tk2cywhn3hb104rqr3nzwy1m0000gn/T/praevisio-verdict-zx49_4xk/.praevisio/runs/20260204T193111Z/manifest.json",
+    "manifest_sha256": "953c6bacee1c7eb4a97c6a1d1cc44238beb33745fb33e579ab441335db50288b"
   }
 ]

@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 
 from behave import given, when, then
 
+from praevisio.application.decision_service import build_decision
 from praevisio.application.evaluation_service import EvaluationService
 from praevisio.domain.entities import StaticAnalysisResult
 from praevisio.domain.evaluation_config import EvaluationConfig
@@ -78,10 +82,48 @@ def step_completed_run(context) -> None:
     )
     result = service.evaluate_path(str(context.repo_path), config=_base_config())
     context.result = result
+    details = result.details
+    audit_path = details.get("audit_path")
+    manifest_path = details.get("manifest_path")
+    if audit_path:
+        context.audit_path = Path(audit_path)
+    if manifest_path:
+        context.manifest_path = Path(manifest_path)
 
 
 @when("I run evaluation")
 def step_run_evaluation(context) -> None:
+    synthetic = getattr(context, "synthetic_evaluation", None)
+    if synthetic is not None:
+        result, evaluation = synthetic.build()
+        context.result = result
+        context.evaluation = evaluation
+        context.decision = build_decision(
+            result,
+            evaluation,
+            enforcement_mode="ci-gate",
+            fail_on_violation=True,
+        )
+        manifest_metadata = getattr(synthetic, "manifest_metadata", None)
+        if manifest_metadata is not None:
+            run_dir = Path(tempfile.mkdtemp(prefix="praevisio-manifest-"))
+            manifest_path = run_dir / "manifest.json"
+            manifest = {"metadata": manifest_metadata}
+            manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+            digest = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+            result.details["manifest_path"] = str(manifest_path)
+            result.details["manifest_sha256"] = digest
+        payload = {
+            "credence": result.credence,
+            "verdict": result.verdict,
+            "details": result.details,
+        }
+        exit_code = 1 if result.verdict in {"red", "error"} else 0
+        context.cli_result = SimpleNamespace(
+            exit_code=exit_code,
+            output=json.dumps(payload),
+        )
+        return
     service = EvaluationService(
         analyzer=context.analyzer,
         test_runner=context.test_runner,
@@ -99,9 +141,15 @@ def step_pytest_evidence_stored(context) -> None:
 
 @then("the evidence should include exit code")
 def step_pytest_exit_code(context) -> None:
-    evidence = context.result.details.get("evidence", {})
-    assert "test_error" in evidence
-    assert "tests_skipped" in evidence
+    manifest_path = context.result.details.get("manifest_path")
+    assert manifest_path, "Missing manifest_path"
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+    artifacts = manifest.get("artifacts", [])
+    pytest_artifacts = [a for a in artifacts if a.get("kind") == "pytest"]
+    assert pytest_artifacts, "No pytest artifacts listed in manifest"
+    pytest_path = Path(manifest_path).parent / pytest_artifacts[0]["path"]
+    payload = json.loads(pytest_path.read_text(encoding="utf-8"))
+    assert "exit_code" in payload
 
 
 @then("semgrep evidence should be stored")

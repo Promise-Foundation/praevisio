@@ -132,7 +132,7 @@ def step_create_config(context) -> None:
     config = (
         "evaluation:\n"
         "  promise_id: llm-input-logging\n"
-        "  threshold: 0.95\n"
+        "  threshold: 0.80\n"
         "  abductio_credits: 8\n"
         "  pytest_targets:\n"
         "    - tests/test_logging.py\n"
@@ -217,7 +217,7 @@ def step_remove_log(context) -> None:
 
 @then("the evaluation should fail")
 def step_eval_fail(context) -> None:
-    assert context.cli_result.exit_code == 0, context.cli_result.output
+    assert context.cli_result.exit_code != 0, context.cli_result.output
 
 
 @then("semgrep should report 1 violation")

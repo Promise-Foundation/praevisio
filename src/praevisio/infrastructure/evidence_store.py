@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+from .chain_of_custody import ChainOfCustodyLog
+
 
 @dataclass(frozen=True)
 class EvidenceArtifact:
@@ -18,30 +20,67 @@ class EvidenceArtifact:
 class EvidenceStore:
     """Persist evidence artifacts and return stable reference strings."""
 
-    def __init__(self, base_dir: Path) -> None:
+    def __init__(
+        self,
+        base_dir: Path,
+        *,
+        hash_only: bool = False,
+        custody_log: ChainOfCustodyLog | None = None,
+    ) -> None:
         self._base_dir = base_dir
         self._artifacts: List[EvidenceArtifact] = []
+        self._hash_only = hash_only
+        self._custody_log = custody_log
         self._base_dir.mkdir(parents=True, exist_ok=True)
 
     def write_text(self, name: str, content: str, kind: str) -> str:
         path = self._base_dir / name
         path.parent.mkdir(parents=True, exist_ok=True)
         data = content.encode("utf-8")
-        path.write_bytes(data)
         sha = self._sha256_bytes(data)
-        self._record(kind, path, sha)
+        if not self._hash_only:
+            path.write_bytes(data)
+        self._record(kind, path, sha, size_bytes=len(data))
         return f"{kind}:sha256:{sha}"
 
     def write_json(self, name: str, payload: Dict[str, Any], kind: str) -> str:
         text = json.dumps(payload, indent=2, sort_keys=True)
         return self.write_text(name, text, kind=kind)
 
-    def write_manifest(self, name: str = "manifest.json", metadata: Dict[str, Any] | None = None) -> Tuple[Path, str]:
+    def read_text(
+        self, name: str, *, evidence_id: str, actor: str, purpose: str
+    ) -> str:
+        path = self._base_dir / name
+        content = path.read_text(encoding="utf-8")
+        if self._custody_log is not None:
+            self._custody_log.record_access(
+                evidence_id, actor=actor, purpose=purpose
+            )
+        return content
+
+    def read_bytes(
+        self, name: str, *, evidence_id: str, actor: str, purpose: str
+    ) -> bytes:
+        path = self._base_dir / name
+        content = path.read_bytes()
+        if self._custody_log is not None:
+            self._custody_log.record_access(
+                evidence_id, actor=actor, purpose=purpose
+            )
+        return content
+
+    def enable_chain_of_custody(self, custody_log: ChainOfCustodyLog) -> None:
+        self._custody_log = custody_log
+
+    def write_manifest(
+        self, name: str = "manifest.json", metadata: Dict[str, Any] | None = None
+    ) -> Tuple[Path, str]:
         manifest = {
             "artifacts": [
                 {
                     "kind": a.kind,
                     "path": a.path,
+                    "pointer": a.path,
                     "sha256": a.sha256,
                     "size_bytes": a.size_bytes,
                 }
@@ -63,9 +102,10 @@ class EvidenceStore:
     def artifacts(self) -> List[EvidenceArtifact]:
         return list(self._artifacts)
 
-    def _record(self, kind: str, path: Path, sha: str) -> None:
+    def _record(self, kind: str, path: Path, sha: str, size_bytes: int | None = None) -> None:
         rel_path = str(path.relative_to(self._base_dir))
-        size_bytes = path.stat().st_size
+        if size_bytes is None:
+            size_bytes = path.stat().st_size if path.exists() else 0
         self._artifacts.append(
             EvidenceArtifact(kind=kind, path=rel_path, sha256=sha, size_bytes=size_bytes)
         )

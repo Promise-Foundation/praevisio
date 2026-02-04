@@ -55,7 +55,7 @@ jobs:
       - run: |
           praevisio ci-gate \
             --severity high \
-            --fail-on-violation \
+            --enforce \
             --output logs/ci-gate-report.json \
             --config .praevisio.yaml
       - uses: actions/upload-artifact@v4

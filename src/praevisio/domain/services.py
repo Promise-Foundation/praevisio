@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from typing import Dict, Iterable, List, Tuple
 
 from .entities import Hook, HookResult, CommitContext
@@ -14,22 +15,31 @@ class HookSelectionService:
 
     def sort_by_dependencies(self, hooks: List[Hook]) -> List[Hook]:
         # Simple topological sort (Kahn's algorithm)
-        graph: Dict[str, List[str]] = {h.id: list(h.depends_on) for h in hooks}
         id_to_hook = {h.id: h for h in hooks}
-        incoming = {h.id: set(graph[h.id]) for h in hooks}
-        ready = [hid for hid, deps in incoming.items() if not deps]
+        incoming = {h.id: set(h.depends_on) for h in hooks}
+        dependents: Dict[str, List[str]] = {h.id: [] for h in hooks}
+        for hook in hooks:
+            for dep in hook.depends_on:
+                if dep in dependents:
+                    dependents[dep].append(hook.id)
+
+        ready = deque([h.id for h in hooks if not incoming[h.id]])
         order: List[Hook] = []
+        ordered_ids = set()
         while ready:
-            hid = ready.pop(0)
+            hid = ready.popleft()
+            if hid in ordered_ids:
+                continue
             order.append(id_to_hook[hid])
-            # remove edges
-            for k, deps in incoming.items():
+            ordered_ids.add(hid)
+            for child in dependents.get(hid, []):
+                deps = incoming[child]
                 if hid in deps:
                     deps.remove(hid)
-                    if not deps and k not in [h.id for h in order] and k in id_to_hook and id_to_hook[k] not in order and k not in ready:
-                        ready.append(k)
+                if not deps and child not in ordered_ids:
+                    ready.append(child)
         # Append any remaining hooks (in case of cycles, keep original order)
-        remaining = [h for h in hooks if h.id not in [o.id for o in order]]
+        remaining = [h for h in hooks if h.id not in ordered_ids]
         return order + remaining
 
     def matched_files(self, hook: Hook, context: CommitContext) -> List[str]:
@@ -42,4 +52,3 @@ class HookSelectionService:
             if any(p.matches(f) for p in hook.patterns):
                 matched.append(f)
         return matched
-

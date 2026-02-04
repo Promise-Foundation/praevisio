@@ -13,3 +13,4 @@ class Promise:
     domain: str = ""
     critical: bool = True
     credence_threshold: float = 0.95
+    applicable: bool | None = None

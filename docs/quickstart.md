@@ -19,7 +19,7 @@ praevisio version
 ```bash
 praevisio ci-gate fixtures/hello-world \
   --severity high \
-  --fail-on-violation \
+  --enforce \
   --output logs/ci-gate-report.json \
   --config fixtures/hello-world/.praevisio.yaml
 ```

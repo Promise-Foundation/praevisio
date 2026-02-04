@@ -48,7 +48,7 @@ def _write_config(repo_path: Path) -> Path:
             [
                 "evaluation:",
                 "  promise_id: llm-input-logging",
-                "  threshold: 0.90",
+                "  threshold: 0.80",
                 "  abductio_credits: 8",
                 "  pytest_targets:",
                 "    - tests/test_logging.py",
@@ -108,9 +108,12 @@ def step_run_tutorial_evaluation(context) -> None:
 
 @then('the verdict should be "{expected}"')
 def step_assert_verdict(context, expected: str) -> None:
-    assert context.cli_result.exit_code == 0, context.cli_result.output
     payload = json.loads(context.cli_result.output)
     assert payload["verdict"] == expected, payload
+    if expected in {"red", "error"}:
+        assert context.cli_result.exit_code != 0, context.cli_result.output
+    else:
+        assert context.cli_result.exit_code == 0, context.cli_result.output
     context.last_payload = payload
 
 

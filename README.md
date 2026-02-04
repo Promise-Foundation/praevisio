@@ -91,7 +91,7 @@ Typical flow inside a governed repo:
 ```bash
 praevisio ci-gate fixtures/hello-world \
   --severity high \
-  --fail-on-violation \
+  --enforce \
   --output logs/ci-gate-report.json \
   --config fixtures/hello-world/.praevisio.yaml
 ```
@@ -101,6 +101,8 @@ You’ll get:
 - credence + verdict
 - artifact paths for `audit.json` and `manifest.json`
 - evidence summaries and stable references (`pytest:sha256:…`, `semgrep:sha256:…`)
+
+Note: `ci-gate` is report-only by default. Use `--enforce` (alias: `--fail-on-violation`) to make CI exit non-zero on red/error.
 
 ---
 
@@ -152,7 +154,7 @@ jobs:
         run: |
           praevisio ci-gate . \
             --severity high \
-            --fail-on-violation \
+            --enforce \
             --output logs/ci-gate-report.json \
             --config .praevisio.yaml
 

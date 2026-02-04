@@ -101,7 +101,7 @@ hooks: []
 ## Run the Gate
 
 ```bash
-praevisio ci-gate --config .praevisio.yaml --severity high --fail-on-violation
+praevisio ci-gate --config .praevisio.yaml --severity high --enforce
 ```
 
 If you use severity thresholds, configure `evaluation.severity` and `evaluation.thresholds` as shown in Tutorial 3.

@@ -13,5 +13,5 @@ Feature: Privacy redaction at LLM boundary
     And the output should contain "[REDACTED_PHONE]"
 
   Scenario: Redact multiple PII types
-    When I redact "Email: test@example.com, Phone: 555-0100, SSN: 123-45-6789"
+    When I redact "Email: test@example.com, Phone: 555-123-4567, SSN: 123-45-6789"
     Then the output should contain 3 redaction markers

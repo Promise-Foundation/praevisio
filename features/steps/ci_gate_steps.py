@@ -63,7 +63,7 @@ def step_mock_evaluate_commit(context, credence: float) -> None:
     cli_module.build_evaluation_service = lambda: FakeEvaluationService()
 
 
-@when('I run the CI gate for severity "high" with fail-on-violation enabled')
+@when('I run the CI gate for severity "high" with enforcement enabled')
 def step_run_ci_gate(context) -> None:
     """
     Invoke the Typer CLI app as 'praevisio ci-gate ...' using CliRunner.
@@ -75,7 +75,7 @@ def step_run_ci_gate(context) -> None:
         "ci-gate",
         "--severity",
         context.severity,
-        "--fail-on-violation",
+        "--enforce",
         "--output",
         str(context.report_path),
         "--config",

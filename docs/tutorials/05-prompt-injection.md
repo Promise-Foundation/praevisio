@@ -46,6 +46,7 @@ If your project uses a different contract, keep the tests but adjust the asserti
 
 ```python
 from __future__ import annotations
+import re
 from pathlib import Path
 
 INJECTION_SENTINEL = "BLOCKED"
@@ -57,9 +58,17 @@ def log(prompt: str, log_path: Path) -> None:
 
 
 def guard(prompt: str) -> dict:
-    lowered = prompt.lower()
-    is_attack = "ignore all instructions" in lowered or "reveal secrets" in lowered
-    return {"is_attack": is_attack, "reason": "heuristic"}
+    normalized = re.sub(r"[^a-z0-9]+", " ", prompt.lower())
+    normalized = " ".join(normalized.split())
+    patterns = [
+        re.compile(r"\bignore (all|previous|prior) instructions\b"),
+        re.compile(r"\breveal (secrets|system prompt|your prompt)\b"),
+        re.compile(r"\brole\s*:\s*(system|developer)\b"),
+    ]
+    for pattern in patterns:
+        if pattern.search(normalized):
+            return {"is_attack": True, "reason": f"pattern:{pattern.pattern}"}
+    return {"is_attack": False, "reason": "heuristic"}
 
 
 def call_llm(prompt: str) -> str:
