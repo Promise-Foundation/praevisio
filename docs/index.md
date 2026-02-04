@@ -17,6 +17,7 @@ white-paper
 quickstart
 api
 tutorials/index
+examples
 ```
 
 ## Getting started
